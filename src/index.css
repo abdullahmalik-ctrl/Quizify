@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Caveat:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Custom Utilities */
+.font-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+html,
+body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  width: 100%;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    background: white;
+    color: black;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  * {
+    color: black !important;
+    text-shadow: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Critical Layout Overrides */
+  [class*="overflow-hidden"] {
+    overflow: visible !important;
+  }
+
+  [style*="transform"] {
+    transform: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Restore background for specific elements if needed like charts or shaded boxes */
+  .print\:bg-black {
+    background-color: black !important;
+    color: white !important;
+  }
+
+  .print\:text-white {
+    color: white !important;
+  }
+
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force break handling */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  .break-before-page {
+    break-before: page;
+  }
+}

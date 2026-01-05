@@ -1,5 +1,5 @@
 
-const apiKey = "AIzaSyCxMU4HO-rCJRr9dwLGdz5p2x3lrjGEs8k"; // API Key provided by user
+const apiKey = import.meta.env.VITE_GEMINI_KEY; // API Key from environment variables
 
 const cleanJson = (text) => {
     if (!text) return null;

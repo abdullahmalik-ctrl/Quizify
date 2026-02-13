@@ -25,9 +25,9 @@ export default function RenderWelcome({ handleStart }) {
                     { id: 'topic', icon: Zap, title: "Topic Mode", desc: "Generate from a simple prompt", gradient: "from-fuchsia-600/20 to-pink-600/20", border: "group-hover:border-fuchsia-500/50", glow: "group-hover:shadow-fuchsia-500/20" }
                 ].map((item) => (
                     <button key={item.id} onClick={() => handleStart(item.id)} className="group relative h-64 w-full perspective-1000 active:scale-95 transition-transform duration-200">
-                        <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} rounded-3xl blur-xl opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                        <div className={`relative h-full bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center gap-6 transition-all duration-300 md:group-hover:-translate-y-2 md:group-hover:shadow-2xl ${item.border} ${item.glow} shadow-lg md:shadow-none`}>
-                            <div className="p-5 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-white/10 transition-colors">
+                        <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} rounded-[48px] blur-xl opacity-40 md:opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                        <div className={`relative h-full bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-[48px] p-8 flex flex-col items-center justify-center gap-6 transition-all duration-300 md:group-hover:-translate-y-2 md:group-hover:shadow-2xl ${item.border} ${item.glow} shadow-lg md:shadow-none`}>
+                            <div className="p-5 bg-white/5 rounded-[40px] border border-white/5 group-hover:bg-white/10 transition-colors">
                                 <item.icon size={40} className="text-white group-hover:scale-110 transition-transform duration-300" />
                             </div>
                             <div className="space-y-2">

@@ -2,7 +2,9 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
 // Set worker source to local file
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/Quizify/pdf.worker.min.mjs';
+}
 
 export const parseFile = async (file) => {
     const extension = file.name.split('.').pop().toLowerCase();

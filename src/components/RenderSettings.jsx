@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, CheckCircle, Save, PlusCircle, Building2, User, Edit3, Upload, Trash2, Ghost, AlertTriangle } from 'lucide-react';
+import { Settings, CheckCircle, Save, PlusCircle, Building2, User, Edit3, Upload, Trash2, Ghost, AlertTriangle, Key, Activity, Loader2, Sparkles } from 'lucide-react';
+import { checkApiKey } from '../utils/gemini';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import Input from './ui/Input';
@@ -10,9 +11,13 @@ const RenderSettings = ({
     candidateName, setCandidateName,
     vibeCheck, setVibeCheck,
     profiles, setProfiles,
-    profileName, setProfileName
+    profileName, setProfileName,
+    userApiKey, setUserApiKey,
+    aiModel, setAiModel
 }) => {
     const [error, setError] = useState(null);
+    const [checkingKey, setCheckingKey] = useState(false);
+    const [checkStatus, setCheckStatus] = useState(null); // { success, model, error }
 
     const saveProfile = () => {
         if (!profileName.trim()) return;
@@ -127,6 +132,33 @@ const RenderSettings = ({
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
+        }
+    };
+    const handleApiKeyChange = (e) => {
+        const val = e.target.value.trim();
+        setUserApiKey(val);
+        localStorage.setItem('quizify_api_key', val);
+        setCheckStatus(null);
+    };
+
+    const verifyKey = async () => {
+        if (!userApiKey) {
+            setCheckStatus({ success: false, error: "Please enter an API Key first." });
+            return;
+        }
+        setCheckingKey(true);
+        setCheckStatus(null);
+        try {
+            const result = await checkApiKey(userApiKey);
+            setCheckStatus(result);
+            if (result.success) {
+                setAiModel(result.modelId);
+                localStorage.setItem('quizify_ai_model', result.modelId);
+            }
+        } catch (e) {
+            setCheckStatus({ success: false, error: "Verification failed." });
+        } finally {
+            setCheckingKey(false);
         }
     };
 
@@ -259,6 +291,68 @@ const RenderSettings = ({
                                     <div className={`w-6 h-6 bg-white rounded-full transition-transform duration-300 shadow-md ${vibeCheck ? 'translate-x-6' : 'translate-x-0'}`}></div>
                                 </button>
                             </div>
+                        </div>
+                    </Card>
+
+                    <Card title="AI Configuration" icon={Sparkles}>
+                        <div className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-bold text-white/60 uppercase tracking-widest ml-1">Gemini API Key</label>
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-[10px] text-fuchsia-400 hover:text-white transition-colors underline">Get Free Key</a>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="password"
+                                            placeholder="Paste your Gemini API Key..."
+                                            value={userApiKey}
+                                            onChange={handleApiKeyChange}
+                                            className="w-full bg-black/30 border border-white/10 rounded-xl px-12 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500/50 focus:ring-1 focus:ring-fuchsia-500/20 transition-all placeholder:text-white/10"
+                                        />
+                                        <Key size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" />
+                                    </div>
+                                    <button
+                                        onClick={verifyKey}
+                                        disabled={checkingKey}
+                                        className={`px-6 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all whitespace-nowrap ${checkStatus?.success ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 hover:bg-white/10 text-white/60 border border-white/5'}`}
+                                    >
+                                        {checkingKey ? <Loader2 size={14} className="animate-spin" /> : <Activity size={14} />}
+                                        {checkStatus?.success ? 'Reset Connection' : 'Check Link'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {checkStatus && (
+                                <div className={`p-4 rounded-xl border transition-all animate-fade-in ${checkStatus.success ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                    <div className="flex items-start gap-3">
+                                        <div className={`p-2 rounded-lg ${checkStatus.success ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                            {checkStatus.success ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <h5 className={`text-xs font-bold uppercase tracking-wider ${checkStatus.success ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {checkStatus.success ? 'Neural Link Established' : 'System Disconnect'}
+                                                </h5>
+                                                {checkStatus.success && <span className="text-[10px] font-black text-white/20 uppercase bg-white/5 px-2 py-0.5 rounded italic animate-pulse">Online</span>}
+                                            </div>
+                                            <p className={`text-[10px] font-medium leading-relaxed ${checkStatus.success ? 'text-emerald-400/60' : 'text-red-400/60'}`}>
+                                                {checkStatus.success
+                                                    ? `Automatically synchronized with ${checkStatus.displayName}. Synthesis architecture is primed for high-purity generation.`
+                                                    : checkStatus.error || "The provided API key is invalid or lacks necessary permissions."}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!checkStatus && !userApiKey && (
+                                <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                                    <p className="text-[10px] text-white/30 leading-relaxed italic">
+                                        "By providing your own API key, you bypass local buffer limits and gain direct access to advanced neural synthesis models."
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </div>

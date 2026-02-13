@@ -54,7 +54,7 @@ const RenderConfig = ({ config, setConfig, setStep, generatePaper, error }) => {
                 <Card title="Global Settings" className="flex flex-col gap-6" icon={Settings}>
                     <div>
                         <label className="text-[10px] font-bold text-white/40 uppercase mb-3 block tracking-widest">Difficulty</label>
-                        <div className="grid grid-cols-1 gap-2 bg-black/20 p-2 rounded-2xl border border-white/10">
+                        <div className="grid grid-cols-1 gap-2 bg-black/20 p-2 rounded-[48px] border border-white/10">
                             {['easy', 'medium', 'hard'].map(level => (
                                 <button key={level} onClick={() => setConfig({ ...config, difficulty: level })} className={`flex items-center justify-between p-3.5 rounded-xl transition-all duration-300 border ${config.difficulty === level ? 'bg-white/10 border-fuchsia-400/50 shadow-inner' : 'bg-transparent border-transparent hover:bg-white/5'}`}>
                                     <div className="flex items-center gap-3">
@@ -99,7 +99,7 @@ const RenderConfig = ({ config, setConfig, setStep, generatePaper, error }) => {
                         {config.sections.map((section, i) => {
                             const color = section.type === 'mcq' ? "cyan" : "pink";
                             return (
-                                <div key={section.id} className={`bg-gradient-to-br from-${color}-500/10 to-transparent p-5 rounded-2xl border border-white/10 hover:border-${color}-400/40 transition-all group hover:-translate-y-1 backdrop-blur-md relative`}>
+                                <div key={section.id} className={`bg-gradient-to-br from-${color}-500/10 to-transparent p-5 rounded-[40px] border border-white/10 hover:border-${color}-400/40 transition-all group hover:-translate-y-1 backdrop-blur-md relative`}>
                                     <div className="absolute top-3 right-3 flex gap-2">
                                         <button onClick={() => duplicateSection(i)} className="text-white/20 hover:text-cyan-400 transition-colors" title="Duplicate Group"><Copy size={16} /></button>
                                         {config.sections.length > 1 && (

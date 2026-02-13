@@ -141,13 +141,13 @@ const RenderResults = ({
                                             return (
                                                 <div key={q.id} className="relative pl-12 border-l-4 border-gray-200 py-1 break-inside-avoid">
                                                     <div className="absolute -left-[19px] top-0 bg-white border-2 border-gray-200 rounded-full w-9 h-9 flex items-center justify-center z-10 shadow-sm">
-                                                        {isCorrect ? <span className="text-emerald-600 font-bold text-xl">✓</span> : <span className="text-red-600 font-bold text-xl">✕</span>}
+                                                        {isCorrect ? <span className="text-indigo-600 font-bold text-xl">✓</span> : <span className="text-red-600 font-bold text-xl">✕</span>}
                                                     </div>
                                                     <div className="flex justify-between items-start mb-3">
                                                         <p className="text-lg font-bold text-black w-4/5"><span className="mr-2 text-gray-400">{globalQuestionIndex}.</span> <span dangerouslySetInnerHTML={{ __html: q.question }} />
                                                             <span className="text-sm font-normal text-gray-500 ml-2">[{q.marks}]</span>
                                                         </p>
-                                                        <span className={`font-mono font-bold text-lg ${isCorrect ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                        <span className={`font-mono font-bold text-lg ${isCorrect ? 'text-indigo-600' : 'text-red-600'}`}>
                                                             {isCorrect ? `+${q.marks}` : '0'}
                                                         </span>
                                                     </div>
@@ -156,9 +156,9 @@ const RenderResults = ({
                                                             const isSelected = userAnswer === opt;
                                                             const isTheAnswer = q.answer === opt;
                                                             let style = "border-gray-200 text-gray-500 bg-white";
-                                                            if (isSelected && isCorrect) style = "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold shadow-sm ring-1 ring-emerald-200";
+                                                            if (isSelected && isCorrect) style = "border-indigo-500 bg-emerald-50 text-indigo-900 font-bold shadow-sm ring-1 ring-emerald-200";
                                                             else if (isSelected && !isCorrect) style = "border-red-500 bg-red-50 text-red-900 line-through decoration-red-500/50 decoration-2";
-                                                            else if (!isSelected && isTheAnswer) style = "border-emerald-500 bg-emerald-50/50 text-emerald-700 font-bold border-dashed";
+                                                            else if (!isSelected && isTheAnswer) style = "border-indigo-500 bg-emerald-50/50 text-indigo-700 font-bold border-dashed";
                                                             return (
                                                                 <div key={oIdx} className={`px-4 py-3 rounded-lg border-2 text-sm flex items-center gap-3 ${style}`}>
                                                                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected || isTheAnswer ? 'border-current' : 'border-gray-300'}`}>
@@ -217,7 +217,7 @@ const RenderResults = ({
                                                                 <p className="text-red-800 text-sm font-medium italic leading-relaxed">"{gradeData.feedback}"</p>
                                                             </div>
                                                             <div className="md:border-l md:border-red-100 md:pl-6">
-                                                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block mb-2">Recommended Answer</span>
+                                                                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block mb-2">Recommended Answer</span>
                                                                 <div className="text-gray-600 text-sm leading-relaxed">
                                                                     <FormattedText text={gradeData.correction || q.answerKey} />
                                                                 </div>
@@ -264,13 +264,13 @@ const RenderResults = ({
                 <p className="text-white/60 font-light text-lg md:text-xl">Your assessment analysis is ready.</p>
             </div>
 
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 md:p-12 shadow-2xl relative overflow-hidden">
+            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[48px] p-6 md:p-12 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] translate-y-1/2 -translate-x-1/2"></div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 relative z-10 items-center">
-                    <div className="flex flex-col items-center justify-center p-6 md:p-8 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm shadow-inner">
-                        <span className="text-7xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-cyan-400 drop-shadow-lg">{percentage}%</span>
+                    <div className="flex flex-col items-center justify-center p-6 md:p-8 border border-white/10 rounded-[40px] bg-white/5 backdrop-blur-sm shadow-inner">
+                        <span className="text-7xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-indigo-400 drop-shadow-lg">{percentage}%</span>
                         <span className="text-xs uppercase tracking-widest text-white/50 font-bold mt-2 md:mt-4">Total Score</span>
                         <div className="flex items-baseline gap-1 mt-1">
                             <span className="text-3xl md:text-4xl font-bold text-white">{score}</span>
@@ -279,9 +279,9 @@ const RenderResults = ({
                     </div>
 
                     <div className="space-y-4">
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:bg-white/10 transition-colors">
+                        <div className="bg-white/5 border border-white/10 rounded-[40px] p-4 md:p-5 flex items-center justify-between hover:bg-white/10 transition-colors">
                             <div className="flex items-center gap-3 md:gap-4">
-                                <div className="p-2 md:p-3 bg-cyan-500/20 rounded-xl text-cyan-300"><CheckCircle2 size={20} className="md:w-6 md:h-6" /></div>
+                                <div className="p-2 md:p-3 bg-indigo-500/20 rounded-xl text-indigo-300"><CheckCircle2 size={20} className="md:w-6 md:h-6" /></div>
                                 <div className="text-left">
                                     <p className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest">Multiple Choice</p>
                                     <p className="text-lg md:text-xl font-bold text-white">Objective </p>
@@ -293,7 +293,7 @@ const RenderResults = ({
                             </div>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-5 flex items-center justify-between hover:bg-white/10 transition-colors">
+                        <div className="bg-white/5 border border-white/10 rounded-[40px] p-4 md:p-5 flex items-center justify-between hover:bg-white/10 transition-colors">
                             <div className="flex items-center gap-3 md:gap-4">
                                 <div className="p-2 md:p-3 bg-fuchsia-500/20 rounded-xl text-fuchsia-300"><Edit3 size={20} className="md:w-6 md:h-6" /></div>
                                 <div className="text-left">
@@ -323,7 +323,7 @@ const RenderResults = ({
                     onClick={() => {
                         setViewMode('model_solution');
                     }}
-                    className="flex-1 !bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 !border-none !text-white shadow-lg shadow-blue-500/20 !rounded-xl !h-14 !text-xs uppercase tracking-widest font-extrabold transition-all hover:scale-[1.02]"
+                    className="flex-1 !bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-500 hover:to-indigo-400 !border-none !text-white shadow-lg shadow-blue-500/20 !rounded-xl !h-14 !text-xs uppercase tracking-widest font-extrabold transition-all hover:scale-[1.02]"
                     variant="ghost"
                 >
                     <FileText size={18} /> Solution
@@ -341,7 +341,7 @@ const RenderResults = ({
 
                 <Button
                     onClick={() => setViewMode('review')}
-                    className="flex-1 !bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 !border-none !text-white shadow-lg shadow-emerald-500/20 !rounded-xl !h-14 !text-xs uppercase tracking-widest font-extrabold transition-all hover:scale-[1.02]"
+                    className="flex-1 !bg-gradient-to-r from-indigo-600 to-teal-500 hover:from-indigo-500 hover:to-teal-400 !border-none !text-white shadow-lg shadow-indigo-500/20 !rounded-xl !h-14 !text-xs uppercase tracking-widest font-extrabold transition-all hover:scale-[1.02]"
                     variant="ghost"
                 >
                     <FileCheck size={18} /> Review

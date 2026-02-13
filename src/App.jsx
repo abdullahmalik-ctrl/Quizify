@@ -23,7 +23,9 @@ export default function Quizify() {
     const [vibeCheck, setVibeCheck] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    // Profile Management State
+    // AI State
+    const [userApiKey, setUserApiKey] = useState(localStorage.getItem('quizify_api_key') || '');
+    const [aiModel, setAiModel] = useState(localStorage.getItem('quizify_ai_model') || 'models/gemini-1.5-flash');
     const [profiles, setProfiles] = useState([]);
     const [profileName, setProfileName] = useState('');
 
@@ -39,6 +41,8 @@ export default function Quizify() {
     const [textAnswers, setTextAnswers] = useState({});
     const [sessionId] = useState(Math.floor(Math.random() * 10000));
     const [scale, setScale] = useState(1);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [flaggedQuestions, setFlaggedQuestions] = useState({});
 
     const [config, setConfig] = useState({
         sections: [
@@ -211,7 +215,7 @@ export default function Quizify() {
         let content = mode === 'topic' ? topicInput : rawText;
         if (!content.trim()) { setError("Input data required."); setStep('config'); return; }
         try {
-            const generated = await generateWithGemini(content, config, mode);
+            const generated = await generateWithGemini(content, config, mode, userApiKey, aiModel);
 
             let totalQuestions = 0;
             generated.sections.forEach(s => totalQuestions += s.questions.length);
@@ -225,7 +229,7 @@ export default function Quizify() {
     const handleSubmitPaper = async () => {
         setStep('grading');
         try {
-            const graded = await gradeWithGemini(paper, textAnswers, answers, vibeCheck);
+            const graded = await gradeWithGemini(paper, textAnswers, answers, vibeCheck, userApiKey, aiModel);
             setGradingResults(graded); setStep('results');
         } catch (e) {
             console.error(e);
@@ -280,7 +284,7 @@ export default function Quizify() {
                                 )}
                                 {paperMode === 'question' ? (
                                     <>
-                                        <Button variant="primary" size="sm" onClick={() => setPaperMode('solve')} className="!py-1.5 !px-3 md:!py-2 md:!px-6 !text-[10px] md:!text-xs !rounded-lg uppercase font-bold tracking-wider shadow-xl">Solve</Button>
+                                        <Button variant="primary" size="sm" onClick={() => { setPaperMode('solve'); setCurrentQuestionIndex(0); }} className="!py-1.5 !px-3 md:!py-2 md:!px-6 !text-[10px] md:!text-xs !rounded-lg uppercase font-bold tracking-wider shadow-xl">Solve</Button>
                                         <button
                                             onClick={() => setIsEditing(!isEditing)}
                                             className={`p-1.5 md:p-2 rounded-lg border border-white/10 transition-colors backdrop-blur-md shadow-lg ${isEditing ? 'bg-fuchsia-600 text-white border-fuchsia-500' : 'bg-black/50 text-white/60 hover:text-white hover:bg-black/70'}`}
@@ -364,6 +368,9 @@ export default function Quizify() {
                     answers={answers} handleAnswerChange={handleAnswerChange}
                     textAnswers={textAnswers} handleTextAnswerChange={handleTextAnswerChange}
                     candidateName={candidateName} mode={mode} topicInput={topicInput} sessionId={sessionId}
+                    currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex}
+                    flaggedQuestions={flaggedQuestions} setFlaggedQuestions={setFlaggedQuestions}
+                    timeLeft={timeLeft} timerActive={timerActive}
                 />}
                 {step === 'results' && viewMode === 'omr_sheet' && <RenderOMR
                     scale={scale} paper={paper} config={config}
@@ -378,14 +385,18 @@ export default function Quizify() {
                     mode={mode} topicInput={topicInput}
                     setStep={setStep} config={config} sessionId={sessionId}
                 />}
-                {step === 'settings' && <RenderSettings
-                    closeSettings={closeSettings}
-                    config={config} setConfig={setConfig}
-                    candidateName={candidateName} setCandidateName={setCandidateName}
-                    vibeCheck={vibeCheck} setVibeCheck={setVibeCheck}
-                    profiles={profiles} setProfiles={setProfiles}
-                    profileName={profileName} setProfileName={setProfileName}
-                />}
+                {step === 'settings' &&
+                    <RenderSettings
+                        closeSettings={closeSettings}
+                        config={config} setConfig={setConfig}
+                        candidateName={candidateName} setCandidateName={setCandidateName}
+                        vibeCheck={vibeCheck} setVibeCheck={setVibeCheck}
+                        profiles={profiles} setProfiles={setProfiles}
+                        profileName={profileName} setProfileName={setProfileName}
+                        userApiKey={userApiKey} setUserApiKey={setUserApiKey}
+                        aiModel={aiModel} setAiModel={setAiModel}
+                    />
+                }
             </main>
         </div>
     );

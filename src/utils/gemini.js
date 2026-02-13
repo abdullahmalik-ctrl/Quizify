@@ -1,5 +1,11 @@
+const defaultApiKey = import.meta.env.VITE_GEMINI_KEY;
 
-const apiKey = import.meta.env.VITE_GEMINI_KEY; // API Key from environment variables
+const safetySettings = [
+    { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+    { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+];
 
 const cleanJson = (text) => {
     if (!text) return null;
@@ -29,7 +35,7 @@ const cleanJson = (text) => {
         }
     }
 };
-const fetchWithRetry = async (url, options, retries = 6, delay = 2000) => {
+const fetchWithRetry = async (url, options, retries = 3, delay = 2000) => {
     try {
         const response = await fetch(url, options);
 
@@ -63,7 +69,10 @@ const fetchWithRetry = async (url, options, retries = 6, delay = 2000) => {
     }
 };
 
-export const generateWithGemini = async (content, config, mode) => {
+export const generateWithGemini = async (content, config, mode, providedKey, providedModel) => {
+    const activeKey = providedKey || defaultApiKey;
+    let activeModel = providedModel || 'models/gemini-1.5-flash';
+    if (!activeModel.startsWith('models/')) activeModel = `models/${activeModel}`;
     const safeConfig = {
         specificTopic: config.specificTopic || '',
         difficulty: config.difficulty || 'medium',
@@ -119,14 +128,18 @@ export const generateWithGemini = async (content, config, mode) => {
 
     try {
         const response = await fetchWithRetry(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/${activeModel}:generateContent?key=${activeKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: promptContext }] }],
                     systemInstruction: { parts: [{ text: systemPrompt }] },
-                    generationConfig: { responseMimeType: "application/json" }
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: 0.7, // Add a bit of temperature for better variety
+                    },
+                    safetySettings
                 })
             }
         );
@@ -136,8 +149,22 @@ export const generateWithGemini = async (content, config, mode) => {
             throw new Error(`Gemini API Error: ${errorData.error?.message || response.statusText || response.status}`);
         }
         const result = await response.json();
-        const parsed = cleanJson(result.candidates?.[0]?.content?.parts?.[0]?.text);
-        if (!parsed || !parsed.sections) throw new Error("Empty or invalid response from AI. Please try again.");
+        console.log("AI Raw Response:", result);
+
+        if (result.promptFeedback?.blockReason) {
+            throw new Error(`AI synthesis blocked: ${result.promptFeedback.blockReason}. This usually happens when the source material contains sensitive topics.`);
+        }
+
+        const candidate = result.candidates?.[0];
+        if (!candidate || candidate.finishReason === 'SAFETY' || candidate.finishReason === 'RECITATION') {
+            throw new Error(`AI synthesis interrupted (${candidate?.finishReason || 'Unknown'}). Try adjusting the topic or content.`);
+        }
+
+        const parsed = cleanJson(candidate.content?.parts?.[0]?.text);
+        if (!parsed || !parsed.sections) {
+            console.error("Invalid AI Structure:", result);
+            throw new Error("The AI provided a non-compliant data structure. Please regenerate.");
+        }
         return parsed;
     } catch (error) {
         console.error("AI Generation Failed:", error);
@@ -145,7 +172,10 @@ export const generateWithGemini = async (content, config, mode) => {
     }
 };
 
-export const gradeWithGemini = async (paper, textAnswers, mcqAnswers, vibeCheck = false) => {
+export const gradeWithGemini = async (paper, textAnswers, mcqAnswers, vibeCheck = false, providedKey, providedModel) => {
+    const activeKey = providedKey || defaultApiKey;
+    let activeModel = providedModel || 'models/gemini-1.5-flash';
+    if (!activeModel.startsWith('models/')) activeModel = `models/${activeModel}`;
     const allQuestions = [];
     if (paper && paper.sections) {
         paper.sections.forEach(section => {
@@ -200,11 +230,15 @@ export const gradeWithGemini = async (paper, textAnswers, mcqAnswers, vibeCheck 
 
     try {
         const response = await fetchWithRetry(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/${activeModel}:generateContent?key=${activeKey}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json" },
+                    safetySettings
+                })
             }
         );
 
@@ -215,5 +249,23 @@ export const gradeWithGemini = async (paper, textAnswers, mcqAnswers, vibeCheck 
     } catch (error) {
         console.error("Grading Error:", error);
         return { results: {}, summary: "Error generating evaluation." };
+    }
+};
+
+export const checkApiKey = async (key) => {
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        if (!response.ok) throw new Error("Invalid API Key");
+        const data = await response.json();
+        // Filter for models that support generateContent
+        const models = data.models || [];
+        const bestModel = models.find(m => m.name.includes('gemini-1.5-pro')) || models.find(m => m.name.includes('gemini-1.5-flash')) || models[0];
+        return {
+            success: true,
+            modelId: bestModel?.name,
+            displayName: bestModel?.displayName || bestModel?.name || "Gemini"
+        };
+    } catch (error) {
+        return { success: false, error: error.message };
     }
 };

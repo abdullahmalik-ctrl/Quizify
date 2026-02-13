@@ -7,7 +7,8 @@ const Button = ({ children, onClick, variant = 'primary', className = '', disabl
         primary: "bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-fuchsia-500/40 border border-white/20 hover:shadow-fuchsia-500/60 hover:border-white/40",
         secondary: "bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 hover:border-white/20 hover:shadow-lg",
         ghost: "bg-transparent text-white/60 hover:text-white hover:bg-white/5",
-        danger: "bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30 hover:border-red-500/50"
+        danger: "bg-red-500/20 text-red-200 border border-red-500/30 hover:bg-red-500/30 hover:border-red-500/50",
+        dark: "bg-slate-950 text-white border border-white/10 hover:bg-black hover:border-white/20 shadow-xl"
     };
 
     return (

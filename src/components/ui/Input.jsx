@@ -1,15 +1,27 @@
 import React from 'react';
 
-const Input = ({ label, value, onChange, placeholder }) => (
-    <div className="group w-full">
-        {label && <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest mb-2 ml-1 group-focus-within:text-fuchsia-400 transition-colors">{label}</label>}
-        <input
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:border-fuchsia-500/50 focus:ring-1 focus:ring-fuchsia-500/50 transition-all duration-300 text-sm shadow-inner"
-        />
-    </div>
-);
+const Input = ({ label, value, onChange, placeholder, type = "text", theme, className = "" }) => {
+    const isLight = theme === 'light';
+
+    return (
+        <div className={`flex flex-col gap-2 ${className}`}>
+            {label && (
+                <label className={`text-[10px] font-bold uppercase tracking-widest ${isLight ? 'text-slate-400' : 'text-white/40'}`}>
+                    {label}
+                </label>
+            )}
+            <input
+                type={type}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className={`w-full bg-transparent border-b py-2 text-sm font-bold focus:outline-none transition-colors ${isLight
+                        ? 'border-slate-200 text-slate-900 focus:border-indigo-400 placeholder:text-slate-300'
+                        : 'border-white/10 text-white focus:border-white/40 placeholder:text-white/20'
+                    }`}
+            />
+        </div>
+    );
+};
 
 export default Input;

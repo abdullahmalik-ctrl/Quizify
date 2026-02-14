@@ -1,7 +1,9 @@
 import React from 'react';
-import { ChevronLeft, FileText, Flag, Bookmark, CheckCircle2, Clock, Calculator, Sigma, X, Plus, Minus, Divide, Equal, Info } from 'lucide-react';
+import { ChevronLeft, FileText, Flag, Bookmark, CheckCircle2, Clock, Calculator, Sigma, X, Plus, Minus, Divide, Equal, Info, Edit3 } from 'lucide-react';
 import Button from './ui/Button';
 import FormattedText from './ui/FormattedText';
+import Sketchpad from './ui/Sketchpad';
+
 
 const RenderPaper = ({
     scale, config, paper,
@@ -9,15 +11,19 @@ const RenderPaper = ({
     isEditing, handleQuestionUpdate, handleOptionUpdate,
     answers, handleAnswerChange,
     textAnswers, handleTextAnswerChange,
+    sketchAnswers, handleSketchSave,
     candidateName, mode, topicInput,
     sessionId,
     currentQuestionIndex, setCurrentQuestionIndex,
     flaggedQuestions, setFlaggedQuestions,
-    timeLeft, timerActive
+    timeLeft, timerActive, theme, tabSwitches
 }) => {
     // Floating Tools state
     const [showTools, setShowTools] = React.useState(false);
+    const [showSketchpad, setShowSketchpad] = React.useState(false);
     const [activeTool, setActiveTool] = React.useState(null); // 'calc' or 'math'
+    const textareaRef = React.useRef(null);
+
     const [calcDisplay, setCalcDisplay] = React.useState('0');
     const [calcExpression, setCalcExpression] = React.useState('');
 
@@ -26,9 +32,18 @@ const RenderPaper = ({
             setCalcDisplay('0');
             return;
         }
+        if (key === '←') {
+            setCalcDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+            return;
+        }
         if (key === '=') {
             try {
-                const sanitized = calcDisplay.replace(/[^-+*/().0-9]/g, '');
+                // More advanced sanitization to allow for basic functions
+                const sanitized = calcDisplay
+                    .replace(/x/g, '*')
+                    .replace(/÷/g, '/')
+                    .replace(/[^-+*/().0-9]/g, '');
+
                 if (!sanitized) return;
                 // eslint-disable-next-line no-eval
                 const result = eval(sanitized);
@@ -36,17 +51,45 @@ const RenderPaper = ({
                 setCalcDisplay(String(Number(result.toFixed(8))));
             } catch (e) {
                 setCalcDisplay('Error');
-                setTimeout(() => setCalcDisplay('0'), 1000);
+                setTimeout(() => setCalcDisplay('0'), 1500);
             }
             return;
         }
         setCalcDisplay(prev => {
             if (prev === '0' || prev === 'Error') {
                 if (typeof key === 'number' || key === '(' || key === '.') return String(key);
-                return '0' + key;
+                if (key === '-' || key === '+') return '0' + key;
+                return '0';
+            }
+            // Prevent consecutive operators
+            const lastChar = prev.slice(-1);
+            const operators = ['+', '-', '*', '/', '÷', 'x', '.'];
+            if (operators.includes(lastChar) && operators.includes(key)) {
+                return prev.slice(0, -1) + key;
             }
             return prev + key;
         });
+    };
+
+    const insertSymbol = (sym) => {
+        if (!currentQ?.id) return;
+        const textarea = textareaRef.current;
+        const currentText = textAnswers[currentQ.id] || '';
+
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const newText = currentText.substring(0, start) + sym + currentText.substring(end);
+            handleTextAnswerChange(currentQ.id, newText);
+
+            // Re-focus and set cursor position after render
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(start + sym.length, start + sym.length);
+            }, 10);
+        } else {
+            handleTextAnswerChange(currentQ.id, currentText + sym);
+        }
     };
 
     // Animation state to trigger M3 transitions
@@ -116,20 +159,21 @@ const RenderPaper = ({
         const isLowTime = timerActive && timeLeft < 300; // 5 mins
 
         return (
-            <div className="w-full max-w-7xl mx-auto flex flex-col md:flex-row gap-8 pb-32 min-h-[80vh] relative">
+            <div className={`w-full max-w-7xl mx-auto flex flex-col md:flex-row gap-8 pb-32 min-h-[80vh] relative transition-colors duration-500`}>
+                {showSketchpad && <Sketchpad theme={theme} onClose={() => setShowSketchpad(false)} onSave={(dataUrl) => handleSketchSave(currentQ.id, dataUrl)} />}
                 {/* Main Question Area */}
                 <div className={`flex-1 flex flex-col gap-6 transition-all duration-300 ${animationClass}`}>
                     {/* Header Info Card - Glassy Redesign */}
-                    <div className="m3-glass rounded-[48px] shadow-sm p-6 flex flex-wrap justify-between items-center gap-4 text-slate-900 border border-white/40">
+                    <div className={`${theme === 'light' ? 'bg-white/80 border-slate-200 shadow-sm' : 'm3-glass-dark border-white/40 shadow-none'} rounded-3xl p-6 flex flex-wrap justify-between items-center gap-4 border`}>
                         <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-50">
+                            <div className="h-14 w-14 rounded-3xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-50/20">
                                 <FileText size={28} />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                                <h2 className={`text-2xl font-black tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                                     Question {currentQuestionIndex + 1}
                                 </h2>
-                                <p className="text-xs font-bold text-indigo-600 uppercase tracking-[0.2em]">
+                                <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-300'}`}>
                                     {currentQ?.sectionTitle || "Assessment"}
                                 </p>
                             </div>
@@ -147,33 +191,38 @@ const RenderPaper = ({
                             </button>
                             <div className="h-10 w-[1px] bg-slate-200"></div>
                             <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Marks</p>
-                                <p className="text-xl font-black text-slate-900 leading-none">{currentQ?.marks || 0}</p>
+                                <p className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Marks</p>
+                                <p className={`text-xl font-black leading-none ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{currentQ?.marks || 0}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Question Content - Unified Glassy Redesign */}
-                    <div className="m3-glass rounded-[40px] shadow-2xl p-8 md:p-12 border border-white/40 flex-1 relative overflow-hidden text-slate-900">
+                    <div className={`${theme === 'light' ? 'bg-white border-slate-200' : 'm3-glass-dark border-white/40 shadow-2xl'} rounded-2xl p-8 md:p-12 border flex-1 relative overflow-hidden`}>
                         <div className="prose prose-slate max-w-none mb-12">
-                            <div className="text-2xl md:text-3xl font-extrabold leading-snug tracking-tight text-slate-900">
+                            <div className={`text-2xl md:text-3xl font-extrabold leading-snug tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                                 <FormattedText text={currentQ?.question || ""} />
                             </div>
                         </div>
+
 
                         {currentQ?.options && currentQ.options.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {currentQ.options.map((opt, oIdx) => (
                                     <label
                                         key={oIdx}
-                                        className={`flex items-start gap-4 p-6 rounded-[40px] border-2 cursor-pointer transition-all duration-300 group relative overflow-hidden ${answers[currentQ.id] === opt
-                                            ? 'border-teal-500 bg-teal-50/50 shadow-sm'
-                                            : 'border-slate-100 bg-white/50 hover:border-teal-200 hover:bg-white'
+                                        className={`flex items-start gap-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 group relative overflow-hidden ${answers[currentQ.id] === opt
+                                            ? 'border-indigo-600 bg-indigo-600/20 shadow-lg shadow-indigo-500/10'
+                                            : theme === 'light'
+                                                ? 'border-slate-100 bg-white/50 hover:border-indigo-200 hover:bg-white'
+                                                : 'border-white/5 bg-black/20 hover:border-white/20 hover:bg-black/40'
                                             }`}
                                     >
                                         <div className={`mt-1 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${answers[currentQ.id] === opt
-                                            ? 'border-teal-600 bg-teal-600 shadow-lg shadow-teal-500/20'
-                                            : 'border-slate-300 group-hover:border-slate-400'
+                                            ? 'border-indigo-500 bg-indigo-500 shadow-lg shadow-indigo-500/30'
+                                            : theme === 'light'
+                                                ? 'border-slate-300 group-hover:border-slate-400'
+                                                : 'border-white/20 group-hover:border-white/40'
                                             }`}>
                                             {answers[currentQ.id] === opt && <div className="w-2.5 h-2.5 rounded-full bg-white"></div>}
                                         </div>
@@ -186,10 +235,10 @@ const RenderPaper = ({
                                             className="hidden"
                                         />
                                         <div className="flex flex-col">
-                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${answers[currentQ.id] === opt ? 'text-teal-700' : 'text-slate-500'}`}>
+                                            <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${answers[currentQ.id] === opt ? 'text-indigo-400' : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
                                                 Option {String.fromCharCode(65 + oIdx)}
                                             </span>
-                                            <span className={`text-lg transition-colors leading-tight ${answers[currentQ.id] === opt ? 'text-slate-900 font-bold' : 'text-slate-800'}`}>
+                                            <span className={`text-lg transition-colors leading-tight ${answers[currentQ.id] === opt ? (theme === 'light' ? 'text-slate-900' : 'text-white') + ' font-bold' : (theme === 'light' ? 'text-slate-800' : 'text-slate-200')}`}>
                                                 {cleanOptionText(opt)}
                                             </span>
                                         </div>
@@ -202,18 +251,31 @@ const RenderPaper = ({
                                     Detailed Response
                                 </div>
                                 <textarea
-                                    className="w-full h-64 bg-white/50 border-2 border-slate-100 rounded-[32px] p-8 text-xl font-serif focus:ring-8 focus:ring-indigo-500/5 focus:border-indigo-500/50 outline-none resize-none transition-all placeholder:text-slate-400 leading-relaxed text-slate-900"
+                                    ref={textareaRef}
+                                    className={`w-full h-64 border-2 rounded-2xl p-8 text-xl font-serif focus:ring-8 outline-none resize-none transition-all leading-relaxed ${theme === 'light' ? 'bg-white/50 border-slate-100 focus:ring-indigo-500/5 focus:border-indigo-500/50 text-slate-900 placeholder:text-slate-400' : 'bg-black/30 border-white/10 focus:ring-white/5 focus:border-white/30 text-white placeholder:text-white/20'}`}
                                     placeholder="Synthesize your answer here..."
                                     value={textAnswers[currentQ?.id] || ''}
                                     onChange={(e) => handleTextAnswerChange(currentQ.id, e.target.value)}
                                     spellCheck={false}
                                 />
+                                {sketchAnswers[currentQ.id] && (
+                                    <div className="mt-4 relative group">
+                                        <img src={sketchAnswers[currentQ.id]} alt="Answer Sketch" className="max-h-48 rounded-2xl border border-slate-200 bg-white" />
+                                        <button onClick={() => handleSketchSave(currentQ.id, null)} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
+                                    </div>
+                                )}
+                                <div className="mt-4 flex justify-end">
+                                    <Button variant="secondary" onClick={() => setShowSketchpad(true)} className="flex items-center gap-2 !rounded-xl !py-2 !px-4 border-2 border-indigo-100 text-indigo-600 hover:bg-indigo-50">
+                                        <Edit3 size={16} /> {sketchAnswers[currentQ.id] ? "Update Sketch" : "Add Sketch / Diagram"}
+                                    </Button>
+                                </div>
                             </div>
                         )}
                     </div>
 
                     {/* Desktop Navigation Box - Glassy Redesign */}
-                    <div className="hidden md:flex justify-between items-center p-3 m3-glass rounded-[48px] shadow-2xl border border-white/30">
+                    <div className={`hidden md:flex justify-between items-center p-3 ${theme === 'light' ? 'bg-white/80 border-slate-200 shadow-xl' : 'm3-glass-dark border-white/30 shadow-2xl'} rounded-3xl border`}>
+
                         <Button
                             variant="dark"
                             disabled={currentQuestionIndex === 0}
@@ -223,9 +285,9 @@ const RenderPaper = ({
                             <ChevronLeft size={20} /> <span className="font-black tracking-wider uppercase text-[10px]">Previous</span>
                         </Button>
 
-                        <div className="flex flex-col items-center px-8 border-x border-slate-200">
-                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em] mb-1 leading-none">Pacing</span>
-                            <span className="text-slate-900 font-black text-xl tracking-tighter leading-none">{currentQuestionIndex + 1} <span className="text-slate-400">/</span> {totalQuestions}</span>
+                        <div className={`flex flex-col items-center px-8 border-x ${theme === 'light' ? 'border-slate-200' : 'border-white/10'}`}>
+                            <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-1 leading-none ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Pacing</span>
+                            <span className={`font-black text-xl tracking-tighter leading-none ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{currentQuestionIndex + 1} <span className="text-slate-400">/</span> {totalQuestions}</span>
                         </div>
 
                         <Button
@@ -244,7 +306,7 @@ const RenderPaper = ({
                 <div className="w-full md:w-80 flex flex-col gap-6 text-slate-900">
                     {/* Timer Widget - Glassy Redesign */}
                     {timerActive && (
-                        <div className={`m3-glass rounded-[48px] p-6 shadow-xl border border-white/40 flex items-center gap-6 relative overflow-hidden group ${isLowTime ? 'timer-critical' : ''}`}>
+                        <div className={`rounded-3xl p-6 shadow-xl border border-white/10 flex items-center gap-6 relative overflow-hidden group ${isLowTime ? 'timer-critical' : ''} ${theme === 'light' ? 'bg-white/80' : 'bg-black/20 backdrop-blur-md'}`}>
                             <div className="relative h-20 w-20 flex-shrink-0">
                                 <svg className="h-full w-full transform -rotate-90">
                                     <circle
@@ -269,8 +331,8 @@ const RenderPaper = ({
                                 </div>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">Time Remaining</span>
-                                <span className={`text-3xl font-black tabular-nums tracking-tighter ${isLowTime ? 'text-red-600' : 'text-slate-900'}`}>
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Time Remaining</span>
+                                <span className={`text-3xl font-black tabular-nums tracking-tighter ${isLowTime ? 'text-red-600' : (theme === 'light' ? 'text-slate-900' : 'text-white')}`}>
                                     {formatTime(timeLeft)}
                                 </span>
                             </div>
@@ -283,11 +345,11 @@ const RenderPaper = ({
                     )}
 
                     {/* Sidebar Question Palette - Glassy Redesign */}
-                    <div className="m3-glass rounded-[48px] shadow-xl p-8 sticky top-24 border border-white/40">
+                    <div className={`rounded-3xl shadow-xl p-8 sticky top-24 border border-white/10 ${theme === 'light' ? 'bg-white/80' : 'bg-black/20 backdrop-blur-md'}`}>
                         <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
                             <div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Navigation</h3>
-                                <p className="text-[10px] font-bold text-slate-600 uppercase mt-1">Status Overview</p>
+                                <h3 className={`text-sm font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Navigation</h3>
+                                <p className={`text-[10px] font-bold uppercase mt-1 ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Status Overview</p>
                             </div>
                             <div className="flex flex-col items-end">
                                 <span className="text-xl font-black text-teal-600">{allQuestions.filter(q => isQuestionAttempted(q.id)).length}</span>
@@ -306,12 +368,16 @@ const RenderPaper = ({
                                         key={q.id}
                                         onClick={() => setCurrentQuestionIndex(idx)}
                                         className={`h-12 w-full rounded-3xl text-sm font-black transition-all duration-300 flex items-center justify-center relative overflow-hidden m3-ripple ${isCurrent
-                                            ? 'bg-slate-900 text-white shadow-xl scale-110 z-10'
+                                            ? 'bg-indigo-600 text-white shadow-xl scale-110 z-10'
                                             : isFlagged
                                                 ? 'bg-orange-100 text-orange-600 border-2 border-orange-200 shadow-sm'
                                                 : isAttempted
-                                                    ? 'bg-teal-50 text-teal-700 border-2 border-teal-100'
-                                                    : 'bg-slate-50 text-slate-400 border border-slate-100 hover:border-teal-300 hover:text-teal-600'
+                                                    ? theme === 'light'
+                                                        ? 'bg-green-100 text-green-700 border-2 border-green-200'
+                                                        : 'bg-green-600 text-white border-2 border-green-500 shadow-lg shadow-green-900/30'
+                                                    : theme === 'light'
+                                                        ? 'bg-slate-50 text-slate-400 border border-slate-100 hover:border-teal-300 hover:text-teal-600'
+                                                        : 'bg-slate-800/60 text-slate-300 border border-white/5 hover:border-white/20 hover:bg-slate-700/80'
                                             }`}
                                     >
                                         {idx + 1}
@@ -319,7 +385,7 @@ const RenderPaper = ({
                                             <div className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500 animate-pulse"></div>
                                         )}
                                         {isAttempted && !isCurrent && !isFlagged && (
-                                            <div className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-teal-500"></div>
+                                            <div className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ${theme === 'light' ? 'bg-green-500' : 'bg-white'}`}></div>
                                         )}
                                     </button>
                                 );
@@ -327,24 +393,24 @@ const RenderPaper = ({
                         </div>
 
                         <div className="mt-10 grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1 p-3 bg-teal-50/50 rounded-3xl border border-teal-100">
-                                <CheckCircle2 size={16} className="text-teal-600" />
-                                <span className="text-[8px] font-black text-teal-700 uppercase tracking-widest leading-none">Solved</span>
-                                <span className="text-lg font-black text-teal-900 leading-none">{allQuestions.filter(q => isQuestionAttempted(q.id)).length}</span>
+                            <div className={`flex flex-col gap-1 p-3 rounded-3xl border ${theme === 'light' ? 'bg-green-50/50 border-green-100' : 'bg-green-500/10 border-green-500/20'}`}>
+                                <CheckCircle2 size={16} className={theme === 'light' ? 'text-green-600' : 'text-green-400'} />
+                                <span className={`text-[8px] font-black uppercase tracking-widest leading-none ${theme === 'light' ? 'text-green-700' : 'text-green-200'}`}>Solved</span>
+                                <span className={`text-lg font-black leading-none ${theme === 'light' ? 'text-green-900' : 'text-white'}`}>{allQuestions.filter(q => isQuestionAttempted(q.id)).length}</span>
                             </div>
-                            <div className="flex flex-col gap-1 p-3 bg-orange-50/50 rounded-3xl border border-orange-100">
-                                <Flag size={16} className="text-orange-500" />
-                                <span className="text-[8px] font-black text-orange-700 uppercase tracking-widest leading-none">Review</span>
-                                <span className="text-lg font-black text-orange-900 leading-none">{Object.values(flaggedQuestions).filter(Boolean).length}</span>
+                            <div className={`flex flex-col gap-1 p-3 rounded-3xl border ${theme === 'light' ? 'bg-orange-50/50 border-orange-100' : 'bg-orange-500/10 border-orange-500/20'}`}>
+                                <Flag size={16} className={theme === 'light' ? 'text-orange-500' : 'text-orange-400'} />
+                                <span className={`text-[8px] font-black uppercase tracking-widest leading-none ${theme === 'light' ? 'text-orange-700' : 'text-orange-200'}`}>Review</span>
+                                <span className={`text-lg font-black leading-none ${theme === 'light' ? 'text-orange-900' : 'text-white'}`}>{Object.values(flaggedQuestions).filter(Boolean).length}</span>
                             </div>
-                            <div className="flex flex-col gap-1 p-4 bg-slate-50 rounded-[24px] border border-slate-100 col-span-2 shadow-inner">
+                            <div className={`flex flex-col gap-1 p-4 rounded-xl border col-span-2 shadow-inner ${theme === 'light' ? 'bg-slate-50 border-slate-100' : 'bg-black/20 border-white/5'}`}>
                                 <div className="flex justify-between items-end">
-                                    <span className="text-[8px] font-black text-slate-700 uppercase tracking-widest">Total Progress</span>
-                                    <span className="text-xs font-black text-slate-900">{Math.round((allQuestions.filter(q => isQuestionAttempted(q.id)).length / totalQuestions) * 100)}%</span>
+                                    <span className={`text-[8px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-700' : 'text-slate-400'}`}>Total Progress</span>
+                                    <span className={`text-xs font-black ${theme === 'light' ? 'text-slate-900' : 'text-slate-300'}`}>{Math.round((allQuestions.filter(q => isQuestionAttempted(q.id)).length / totalQuestions) * 100)}%</span>
                                 </div>
-                                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1 px-[1px]">
+                                <div className={`w-full h-1.5 rounded-full overflow-hidden mt-1 px-[1px] ${theme === 'light' ? 'bg-slate-200' : 'bg-white/10'}`}>
                                     <div
-                                        className="bg-teal-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(20,184,166,0.4)]"
+                                        className="bg-green-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
                                         style={{ width: `${(allQuestions.filter(q => isQuestionAttempted(q.id)).length / totalQuestions) * 100}%` }}
                                     ></div>
                                 </div>
@@ -354,7 +420,7 @@ const RenderPaper = ({
                 </div>
 
                 {/* Mobile Navigation Bar - Glassy Redesign */}
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[60] flex md:hidden items-center justify-between p-3 m3-glass shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] rounded-[48px] border border-white/40 ring-1 ring-white/20">
+                <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[60] flex md:hidden items-center justify-between p-3 ${theme === 'light' ? 'bg-white/80' : 'm3-glass-dark'} shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] rounded-3xl border border-white/40 ring-1 ring-white/20`}>
                     <button
                         disabled={currentQuestionIndex === 0}
                         onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
@@ -364,48 +430,57 @@ const RenderPaper = ({
                     </button>
 
                     <div className="flex flex-col items-center pointer-events-none px-4">
-                        <div className="px-3 py-1 bg-white/50 backdrop-blur-md rounded-full border border-indigo-100/50 mb-1">
-                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em]">Live Assessment</span>
+                        <div className={`px-3 py-1 rounded-full border mb-1 ${theme === 'light' ? 'bg-white/50 backdrop-blur-md border-indigo-100/50' : 'bg-black/20 border-white/10'}`}>
+                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-300'}`}>Live Assessment</span>
                         </div>
-                        <span className="text-lg font-black text-slate-900 tracking-tighter">Q{currentQuestionIndex + 1} <span className="text-slate-400 mx-1">/</span> {totalQuestions}</span>
+                        <span className={`text-lg font-black tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Q{currentQuestionIndex + 1} <span className="text-slate-400 mx-1">/</span> {totalQuestions}</span>
                     </div>
 
                     <button
                         disabled={currentQuestionIndex === totalQuestions - 1}
                         onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                        className="h-14 w-14 rounded-full bg-slate-950 !bg-none text-white flex items-center justify-center transition-all active:scale-95 hover:bg-black shadow-2xl border border-white/10 disabled:opacity-20"
+                        className={`h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl disabled:opacity-20 ${theme === 'light' ? 'bg-slate-950 text-white hover:bg-black' : 'bg-black text-white hover:bg-slate-900 border border-white/10'}`}
                     >
                         <ChevronLeft size={28} className="rotate-180" />
                     </button>
                 </div>
+
                 {/* Floating Tools Palette */}
                 <div className="fixed right-8 bottom-32 z-50 flex flex-col items-end gap-3">
                     {showTools && (
                         <div className="flex flex-col gap-3 animate-fab-in mb-3">
                             <button
+                                onClick={() => setShowSketchpad(true)}
+                                title="Live Sketchpad"
+                                className={`h-14 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${theme === 'light' ? 'bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600' : 'bg-white text-slate-600 hover:bg-violet-50 hover:text-violet-600'}`}
+                            >
+                                <Edit3 size={24} />
+                            </button>
+                            <button
                                 onClick={() => setActiveTool(activeTool === 'calc' ? null : 'calc')}
-                                className={`h-14 w-14 rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-300 ${activeTool === 'calc' ? 'bg-indigo-600 text-white shadow-indigo-500/40' : 'bg-white text-slate-600 hover:bg-violet-50 hover:text-violet-600'}`}
+                                className={`h-14 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${activeTool === 'calc' ? 'bg-indigo-600 text-white shadow-indigo-500/40' : theme === 'light' ? 'bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600' : 'bg-white text-slate-600 hover:bg-violet-50 hover:text-violet-600'}`}
                             >
                                 <Calculator size={24} />
                             </button>
                             <button
                                 onClick={() => setActiveTool(activeTool === 'math' ? null : 'math')}
-                                className={`h-14 w-14 rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-300 ${activeTool === 'math' ? 'bg-indigo-600 text-white shadow-indigo-500/40' : 'bg-white text-slate-600 hover:bg-fuchsia-50 hover:text-fuchsia-600'}`}
+                                className={`h-14 w-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 ${activeTool === 'math' ? 'bg-indigo-600 text-white shadow-indigo-500/40' : theme === 'light' ? 'bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600' : 'bg-white text-slate-600 hover:bg-fuchsia-50 hover:text-fuchsia-600'}`}
                             >
                                 <Sigma size={24} />
                             </button>
                         </div>
                     )}
+
                     <button
                         onClick={() => setShowTools(!showTools)}
-                        className={`h-16 w-16 rounded-[24px] bg-slate-900 text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ${showTools ? 'rotate-45 bg-indigo-600' : ''}`}
+                        className={`h-16 w-16 rounded-full bg-slate-900 text-white shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 ${showTools ? 'rotate-45 bg-indigo-600' : ''}`}
                     >
                         {showTools ? <X size={32} /> : <Plus size={32} />}
                     </button>
 
                     {/* Tool Modals (Glassmorphic) - Responsive Positioning */}
                     {activeTool === 'calc' && (
-                        <div className="fixed md:absolute right-4 md:right-24 bottom-32 md:bottom-0 w-[calc(100vw-32px)] md:w-80 m3-glass p-6 md:p-8 rounded-[48px] shadow-2xl border border-white/20 animate-fab-in select-none z-[70] max-h-[70vh] overflow-y-auto">
+                        <div className="fixed md:absolute right-4 md:right-24 bottom-32 md:bottom-0 w-[calc(100vw-32px)] md:w-80 m3-glass p-6 md:p-8 rounded-3xl shadow-2xl border border-white/20 animate-fab-in select-none z-[70] max-h-[70vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-6">
                                 <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                                     <Calculator size={16} className="text-indigo-600" /> Calculator
@@ -417,20 +492,20 @@ const RenderPaper = ({
                                 <div className="text-4xl font-black text-white font-mono truncate">{calcDisplay}</div>
                             </div>
                             <div className="grid grid-cols-4 gap-2">
-                                {['C', '(', ')', '/', 7, 8, 9, '*', 4, 5, 6, '-', 1, 2, 3, '+', 0, '.', '='].map((key, i) => (
+                                {['C', '←', '(', ')', 7, 8, 9, '÷', 4, 5, 6, 'x', 1, 2, 3, '-', 0, '.', '+', '='].map((key, i) => (
                                     <button
                                         key={i}
                                         onClick={() => handleCalcClick(key)}
-                                        className={`h-12 rounded-xl flex items-center justify-center font-black transition-all active:scale-95 ${typeof key === 'number' || key === '.'
+                                        className={`h-12 rounded-full flex items-center justify-center font-black transition-all active:scale-95 ${typeof key === 'number' || key === '.'
                                             ? 'bg-white text-slate-800 hover:bg-slate-100 shadow-sm border border-slate-100'
                                             : key === '='
-                                                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-50 col-span-2'
-                                                : key === 'C'
+                                                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-50'
+                                                : key === 'C' || key === '←'
                                                     ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
                                                     : 'bg-slate-50 text-indigo-600 hover:bg-indigo-100 border border-slate-100'
                                             }`}
                                     >
-                                        {key === '/' ? <Divide size={16} /> : key === '*' ? <X size={16} /> : key === '-' ? <Minus size={16} /> : key === '+' ? <Plus size={16} /> : key === '=' ? <Equal size={16} /> : key}
+                                        {key === '÷' ? <Divide size={16} /> : key === 'x' ? <X size={16} /> : key === '-' ? <Minus size={16} /> : key === '+' ? <Plus size={16} /> : key === '=' ? <Equal size={16} /> : key}
                                     </button>
                                 ))}
                             </div>
@@ -438,7 +513,7 @@ const RenderPaper = ({
                     )}
 
                     {activeTool === 'math' && (
-                        <div className="fixed md:absolute right-4 md:right-24 bottom-32 md:bottom-0 w-[calc(100vw-32px)] md:w-80 m3-glass p-6 md:p-8 rounded-[48px] shadow-2xl border border-white/20 animate-fab-in z-[70] max-h-[70vh] overflow-y-auto">
+                        <div className="fixed md:absolute right-4 md:right-24 bottom-32 md:bottom-0 w-[calc(100vw-32px)] md:w-80 m3-glass p-6 md:p-8 rounded-3xl shadow-2xl border border-white/20 animate-fab-in z-[70] max-h-[70vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-6">
                                 <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                                     <Sigma size={16} className="text-indigo-600" /> Symbols
@@ -449,13 +524,8 @@ const RenderPaper = ({
                                 {['π', 'θ', 'α', 'β', 'Σ', 'Δ', '∞', '√', '∫', '∂', '±', '≤', '≥', '≈', '≠', '∝', '^2', '√x', 'n!', 'log'].map(sym => (
                                     <button
                                         key={sym}
-                                        onClick={() => {
-                                            if (currentQ?.id) {
-                                                const currentText = textAnswers[currentQ.id] || '';
-                                                handleTextAnswerChange(currentQ.id, currentText + sym);
-                                            }
-                                        }}
-                                        className="h-12 rounded-xl bg-white text-slate-800 font-serif text-xl border border-slate-100 hover:border-teal-500 hover:text-indigo-600 transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                                        onClick={() => insertSymbol(sym)}
+                                        className="h-12 rounded-full bg-white text-slate-800 font-serif text-xl border border-slate-100 hover:border-teal-500 hover:text-indigo-600 transition-all active:scale-95 flex items-center justify-center shadow-sm"
                                     >
                                         {sym}
                                     </button>
@@ -477,11 +547,11 @@ const RenderPaper = ({
             <div key={`paper-${paperMode}-${viewMode}`} className="w-full flex justify-center pb-20 animate-fade-in relative z-10 overflow-hidden">
                 <div className="h-20 print:hidden"></div>
                 <div
-                    className={`shadow-2xl p-8 relative text-gray-900 w-[850px] shrink-0 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none print:min-h-0 print:transform-none bg-white font-serif min-h-[1200px]`}
+                    className="shadow-2xl p-8 relative shrink-0 print:shadow-none print:m-0 print:p-8 print:w-full print:max-w-none print:min-h-0 print:transform-none font-serif min-h-[1200px] transition-all duration-500 w-[850px] bg-white text-gray-900 border border-gray-300"
                     style={{ transform: `scale(${scale})`, transformOrigin: 'top center', marginBottom: `-${(1 - scale) * 1200}px` }}
                 >
                     {/* Header Section */}
-                    <div className="mb-8 border-b-2 border-black pb-4">
+                    <div className="mb-8 border-b-2 pb-4 border-black">
                         <div className="flex items-center justify-center mb-4">
                             {config.logoUrl && (
                                 <div className="absolute left-8 top-8">
@@ -490,7 +560,7 @@ const RenderPaper = ({
                             )}
                             <div className="text-center">
                                 <h1 className="text-5xl font-bold uppercase tracking-wide mb-2">{config.institutionName || "INSTITUTION NAME"}</h1>
-                                <p className="text-xl font-bold text-gray-600 uppercase tracking-widest">Academic Session 2024-25</p>
+                                <p className="text-xl font-bold uppercase tracking-widest text-gray-600">Academic Session 2024-25</p>
                             </div>
                         </div>
 
@@ -500,17 +570,17 @@ const RenderPaper = ({
                             </h2>
                         </div>
 
-                        <div className="flex justify-between items-center border-t-2 border-b-2 border-black py-2 mb-6">
+                        <div className="flex justify-between items-center border-t-2 border-b-2 py-2 mb-6 border-black">
                             <div className="font-bold text-xl"><span className="mr-2">Subject:</span> {mode === 'topic' ? topicInput : "General Knowledge"}</div>
                             <div className="font-bold text-xl"><span className="mr-2">Time Allowed:</span> {config.timerMode === 'manual' ? config.manualTime : Math.ceil(paper?.sections?.reduce((sum, s) => sum + s.questions.length * 3, 0) || 30)} Mins</div>
                             <div className="font-bold text-xl"><span className="mr-2">Total Marks:</span> {paper?.sections?.reduce((total, s) => total + s.questions.reduce((qSum, q) => qSum + q.marks, 0), 0)}</div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-xl">
-                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Name:</span> <div className="border-b-2 border-dotted border-gray-400 w-full text-blue-900 font-bold px-2">{candidateName}</div></div>
-                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Roll No:</span> <div className="border-b-2 border-dotted border-gray-400 w-full"></div></div>
-                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Class:</span> <div className="border-b-2 border-dotted border-gray-400 w-full"></div></div>
-                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Section:</span> <div className="border-b-2 border-dotted border-gray-400 w-full"></div></div>
+                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Name:</span> <div className="border-b-2 border-dotted w-full font-bold px-2 border-gray-400 text-blue-900">{candidateName}</div></div>
+                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Roll No:</span> <div className="border-b-2 border-dotted w-full border-gray-400"></div></div>
+                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Class:</span> <div className="border-b-2 border-dotted w-full border-gray-400"></div></div>
+                            <div className="flex items-end"><span className="font-bold mr-2 whitespace-nowrap">Section:</span> <div className="border-b-2 border-dotted w-full border-gray-400"></div></div>
                         </div>
                     </div>
 
@@ -521,8 +591,8 @@ const RenderPaper = ({
                                 const totalMarks = group.sections.reduce((sum, sec) => sum + sec.questions.reduce((qSum, q) => qSum + q.marks, 0), 0);
 
                                 return (
-                                    <div key={group.title} className="border-2 border-black p-4">
-                                        <div className="flex justify-between items-end border-b-2 border-black mb-2 pb-1">
+                                    <div key={group.title} className="border-2 p-4 border-black">
+                                        <div className="flex justify-between items-end border-b-2 mb-2 pb-1 border-black">
                                             <h3 className="font-bold text-xl uppercase">Section {String.fromCharCode(65 + gIdx)}: {group.title}</h3>
                                             <span className="font-bold text-lg">Marks: {totalMarks}</span>
                                         </div>
@@ -535,10 +605,10 @@ const RenderPaper = ({
                                                     <div key={q.id} className="py-2 first:pt-0 last:pb-0 break-inside-avoid relative group/question">
                                                         <div className="flex items-baseline">
                                                             <span className="font-bold text-xl mr-2">{globalQuestionIndex}.</span>
-                                                            <div className="text-xl mb-1 text-gray-900 font-bold flex-1">
+                                                            <div className="text-xl mb-1 font-bold flex-1 text-gray-900">
                                                                 {isEditing ? (
                                                                     <textarea
-                                                                        className="w-full bg-yellow-50/50 border-b border-gray-300 p-2 font-mono text-sm focus:outline-none focus:border-black text-black min-h-[60px]"
+                                                                        className="w-full bg-white border-b border-black p-2 font-mono text-sm focus:outline-none focus:border-blue-600 text-black min-h-[60px]"
                                                                         value={q.question}
                                                                         onChange={(e) => handleQuestionUpdate(q.sectionId, q.id, 'question', e.target.value)}
                                                                     />
@@ -551,14 +621,14 @@ const RenderPaper = ({
                                                                         <span className="text-sm font-normal text-gray-500">[</span>
                                                                         <input
                                                                             type="number"
-                                                                            className="w-10 text-center bg-yellow-50/50 border-b border-gray-300 text-sm focus:outline-none focus:border-black"
+                                                                            className="w-10 text-center bg-white border-b border-gray-300 text-sm focus:outline-none focus:border-black"
                                                                             value={q.marks}
                                                                             onChange={(e) => handleQuestionUpdate(q.sectionId, q.id, 'marks', parseInt(e.target.value) || 0)}
                                                                         />
                                                                         <span className="text-sm font-normal text-gray-500">]</span>
                                                                     </div>
                                                                 ) : (
-                                                                    <span className="text-sm font-normal text-gray-500 ml-2">[{q.marks}]</span>
+                                                                    <span className="text-sm font-normal ml-2 text-gray-500">[{q.marks}]</span>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -580,7 +650,7 @@ const RenderPaper = ({
                                                                             {isEditing ? (
                                                                                 <input
                                                                                     type="text"
-                                                                                    className="flex-1 bg-yellow-50/50 border-b border-gray-300 text-sm focus:outline-none focus:border-black px-1"
+                                                                                    className="flex-1 bg-white border-b border-gray-300 text-sm focus:outline-none focus:border-black px-1"
                                                                                     value={cleanOptionText(opt)}
                                                                                     onChange={(e) => handleOptionUpdate(q.sectionId, q.id, oIdx, e.target.value)}
                                                                                 />
@@ -593,7 +663,7 @@ const RenderPaper = ({
                                                                         <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
                                                                             <label className="text-xs font-bold uppercase text-gray-500 mr-2">Correct Answer:</label>
                                                                             <select
-                                                                                className="bg-yellow-50/50 border border-gray-300 text-sm p-1 rounded"
+                                                                                className="bg-white border border-gray-300 text-sm p-1 rounded"
                                                                                 value={q.answer}
                                                                                 onChange={(e) => handleQuestionUpdate(q.sectionId, q.id, 'answer', e.target.value)}
                                                                             >
@@ -608,42 +678,22 @@ const RenderPaper = ({
                                                                 <div className="space-y-2 ml-8 mt-2">
                                                                     {q.options.map((opt, oIdx) => (
                                                                         <label key={oIdx} className="flex items-center gap-4 cursor-pointer group">
-                                                                            <div className={`w-5 h-5 rounded-full border-2 border-gray-600 flex items-center justify-center transition-all ${answers[q.id] === opt ? 'border-black bg-black' : 'group-hover:border-black'} print:border-black`}>{answers[q.id] === opt && <div className="w-2 h-2 rounded-full bg-white print:bg-black"></div>}</div>
+                                                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${answers[q.id] === opt ? 'border-black bg-black' : 'border-gray-600'} print:border-black`}>{answers[q.id] === opt && <div className="w-2 h-2 rounded-full bg-white print:bg-black"></div>}</div>
                                                                             <input type="radio" name={q.id} value={opt} checked={answers[q.id] === opt} onChange={() => handleAnswerChange(q.id, opt)} className="hidden" />
-                                                                            <span className={`text-xl text-gray-800 font-bold ${answers[q.id] === opt ? 'text-black font-extrabold' : ''}`}><span className="text-base font-bold text-gray-500 mr-3 uppercase">{String.fromCharCode(97 + oIdx)}</span> {cleanOptionText(opt)}</span>
+                                                                            <span className={`text-xl font-bold ${answers[q.id] === opt ? 'text-black font-extrabold' : 'text-gray-800'}`}><span className="text-base font-bold mr-3 uppercase text-gray-500">{String.fromCharCode(97 + oIdx)}</span> {cleanOptionText(opt)}</span>
                                                                         </label>
                                                                     ))}
                                                                 </div>
                                                             )
                                                         ) : (
                                                             viewMode === 'model_solution' ? (
-                                                                <div className="relative w-full ml-2 mt-2 bg-gray-50 p-4 border border-gray-300 rounded font-bold text-lg">
+                                                                <div className="relative w-full ml-2 mt-2 p-4 border rounded font-bold text-lg bg-white border-black">
                                                                     <span className="block font-extrabold mb-1 underline">Model Answer:</span>
                                                                     <FormattedText text={q.answerKey} />
                                                                 </div>
                                                             ) : (
-                                                                <div className="relative w-full ml-2 mt-2">
-                                                                    {isEditing ? (
-                                                                        <div className="mt-2">
-                                                                            <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Model Answer / Key Points:</label>
-                                                                            <textarea
-                                                                                className="w-full bg-yellow-50/50 border border-gray-300 p-2 font-mono text-sm focus:outline-none focus:border-black min-h-[80px]"
-                                                                                value={q.answerKey}
-                                                                                onChange={(e) => handleQuestionUpdate(q.sectionId, q.id, 'answerKey', e.target.value)}
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        paperMode === 'solve' && (
-                                                                            <textarea
-                                                                                className="w-full h-24 border border-gray-300 rounded-md p-3 text-lg font-serif focus:ring-1 focus:ring-black focus:border-black outline-none resize-y"
-                                                                                placeholder="Type your answer here..."
-                                                                                value={textAnswers[q.id] || ''}
-                                                                                onChange={(e) => handleTextAnswerChange(q.id, e.target.value)}
-                                                                                spellCheck={false}
-                                                                            />
-                                                                        )
-                                                                    )}
-                                                                </div>
+                                                                // Question Paper Mode: Just the question, no answer space
+                                                                null
                                                             )
                                                         )}
                                                     </div>
@@ -657,7 +707,7 @@ const RenderPaper = ({
                     </div>
                     {viewMode === 'model_solution' && (
                         <div className="mt-8 flex justify-center print:hidden">
-                            <Button variant="primary" onClick={() => setViewMode('summary')} className="!rounded-xl shadow-xl">
+                            <Button variant="primary" onClick={() => setViewMode('summary')} className="!rounded-full shadow-xl">
                                 <ChevronLeft size={18} className="mr-2" /> Back to Results
                             </Button>
                         </div>

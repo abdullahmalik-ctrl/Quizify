@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Clock, CheckCircle, Brain, Edit3, FileText, Printer, ChevronLeft, ScanLine } from 'lucide-react';
+import { Settings, Clock, CheckCircle, Brain, Edit3, FileText, Printer, ChevronLeft, ScanLine, Palette, Sun, Moon, Monitor, AlertCircle } from 'lucide-react';
 import { generateWithGemini, gradeWithGemini } from './utils/gemini';
 import Button from './components/ui/Button';
 import RenderWelcome from './components/RenderWelcome';
@@ -10,6 +10,7 @@ import RenderPaper from './components/RenderPaper';
 import RenderOMR from './components/RenderOMR';
 import RenderResults from './components/RenderResults';
 import RenderSettings from './components/RenderSettings';
+
 
 
 export default function Quizify() {
@@ -40,10 +41,14 @@ export default function Quizify() {
     const [paper, setPaper] = useState(null);
     const [answers, setAnswers] = useState({});
     const [textAnswers, setTextAnswers] = useState({});
+    const [sketchAnswers, setSketchAnswers] = useState({});
     const [sessionId] = useState(Math.floor(Math.random() * 10000));
     const [scale, setScale] = useState(1);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [flaggedQuestions, setFlaggedQuestions] = useState({});
+    const [tabSwitches, setTabSwitches] = useState(0);
+    const [theme, setTheme] = useState(localStorage.getItem('quizify_theme') || 'system');
+
 
     const [config, setConfig] = useState({
         sections: [
@@ -102,7 +107,46 @@ export default function Quizify() {
 
     useEffect(() => { topRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [step]);
 
+
+
+    // Theme Management
+    useEffect(() => {
+        const root = window.document.documentElement;
+        const applyTheme = (t) => {
+            root.classList.remove('light', 'dark');
+            if (t === 'system') {
+                const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                root.classList.add(systemTheme);
+            } else {
+                root.classList.add(t);
+            }
+        };
+
+        applyTheme(theme);
+        localStorage.setItem('quizify_theme', theme);
+
+        if (theme === 'system') {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleChange = () => applyTheme('system');
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
+        }
+    }, [theme]);
+
+    // Proctoring: Tab Switch Detection
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden && step === 'paper' && paperMode === 'solve') {
+                setTabSwitches(prev => prev + 1);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [step, paperMode]);
+
     // Scaling logic
+
     useEffect(() => {
         const handleResize = () => {
             const PAPER_WIDTH = 850;
@@ -180,6 +224,10 @@ export default function Quizify() {
         setTextAnswers(prev => ({ ...prev, [qId]: val }));
     }
 
+    const handleSketchSave = (qId, dataUrl) => {
+        setSketchAnswers(prev => ({ ...prev, [qId]: dataUrl }));
+    }
+
     const handlePrint = () => { window.print(); };
 
     // Paper Edit Handlers
@@ -247,18 +295,29 @@ export default function Quizify() {
     const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 
     return (
-        <div className="min-h-screen bg-[#000000] font-sans text-gray-100 selection:bg-fuchsia-500/30 selection:text-white relative overflow-x-hidden" ref={topRef}>
+        <div className={`min-h-screen font-sans selection:bg-fuchsia-500/30 selection:text-white relative overflow-x-hidden transition-colors duration-500 ${theme === 'light' ? 'text-slate-900' : 'text-gray-100'}`} ref={topRef}>
             <div className="fixed inset-0 z-0 pointer-events-none print:hidden">
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,19,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[60] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-20"></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-black via-slate-950 to-fuchsia-950"></div>
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-violet-500/10 rounded-full blur-[120px]"></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-fuchsia-500/10 rounded-full blur-[120px]"></div>
-                <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-cyan-500/5 rounded-full blur-[100px]"></div>
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,19,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-[60] bg-[length:100%_4px,3px_100%] pointer-events-none opacity-10"></div>
+
+                {/* Removed masking gradient so body gradient shows through */}
+
+                {theme === 'dark' ? (
+                    <>
+                        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-violet-500/10 rounded-full blur-[120px]"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-fuchsia-500/10 rounded-full blur-[120px]"></div>
+                        <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] bg-cyan-500/5 rounded-full blur-[100px]"></div>
+                    </>
+                ) : (
+                    <>
+                        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-indigo-400/10 rounded-full blur-[100px]"></div>
+                    </>
+                )}
+                <div className={`absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] ${theme === 'light' ? 'opacity-[0.03]' : 'opacity-100'}`}></div>
             </div>
 
             <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 print:hidden">
-                <div className="absolute inset-0 bg-transparent"></div>
+                <div className={`absolute inset-0 backdrop-blur-md border-b transition-colors duration-500 ${theme === 'light' ? 'bg-white/70 border-slate-200' : 'bg-white/5 border-white/10'}`}></div>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between relative">
                     <div className="flex items-center gap-2 md:gap-4 cursor-pointer group" onClick={() => setStep('welcome')}>
                         <div className="relative">
@@ -268,18 +327,26 @@ export default function Quizify() {
                             </div>
                         </div>
                         <div className="flex flex-col justify-center">
-                            <span className="font-black text-lg md:text-xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-fuchsia-100 to-fuchsia-300 group-hover:from-fuchsia-300 group-hover:to-white transition-all duration-300">QUIZIFY</span>
-                            <span className="text-[8px] md:text-[9px] font-bold text-white/30 tracking-[0.3em] uppercase leading-none group-hover:text-cyan-400 transition-colors duration-300">AI PRO MAX</span>
+                            <span className={`font-black text-lg md:text-xl tracking-tighter transition-all duration-300 ${theme === 'light' ? 'text-slate-900' : 'text-transparent bg-clip-text bg-gradient-to-r from-white via-fuchsia-100 to-fuchsia-300'}`}>QUIZIFY</span>
+                            <span className={`text-[8px] md:text-[9px] font-bold tracking-[0.3em] uppercase leading-none transition-all duration-300 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>AI PRO MAX</span>
                         </div>
                     </div>
+
                     <div className="flex items-center gap-2 md:gap-6">
+                        {tabSwitches > 0 && step === 'paper' && paperMode === 'solve' && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg animate-pulse">
+                                <AlertCircle size={14} className="text-red-500" />
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{tabSwitches} Tab Switch{tabSwitches > 1 ? 'es' : ''}</span>
+                            </div>
+                        )}
                         <button
                             onClick={openSettings}
-                            className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                            className={`p-2 rounded-xl transition-all duration-300 border ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900' : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'}`}
                             title="Settings & Profiles"
                         >
                             <Settings size={20} />
                         </button>
+
                         {step === 'paper' && (
                             <>
                                 <span className="font-mono text-xs text-white bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-widest font-bold hidden md:block backdrop-blur-md">ID: {sessionId}</span>
@@ -354,43 +421,48 @@ export default function Quizify() {
             </nav>
 
             <main className="max-w-7xl mx-auto px-6 py-8 pt-32 relative z-10 print:p-0 print:max-w-none">
-                {step === 'welcome' && <RenderWelcome handleStart={handleStart} />}
+                {step === 'welcome' && <RenderWelcome handleStart={handleStart} theme={theme} />}
                 {step === 'input' && <RenderInput
                     mode={mode} setStep={setStep}
                     rawText={rawText} setRawText={setRawText}
                     topicInput={topicInput} setTopicInput={setTopicInput}
                     handleTextSubmit={handleTextSubmit}
+                    theme={theme}
                 />}
                 {step === 'config' && <RenderConfig
                     config={config} setConfig={setConfig}
                     setStep={setStep} generatePaper={generatePaper}
-                    error={error}
+                    error={error} theme={theme}
+                    mode={mode} topicInput={topicInput} rawText={rawText}
                 />}
-                {step === 'loading' && <RenderLoading loadingMsgIndex={loadingMsgIndex} />}
-                {step === 'grading' && <RenderGrading loadingMsgIndex={loadingMsgIndex} />}
+                {step === 'loading' && <RenderLoading loadingMsgIndex={loadingMsgIndex} theme={theme} />}
+                {step === 'grading' && <RenderLoading isGrading loadingMsgIndex={loadingMsgIndex} theme={theme} />}
                 {(step === 'paper' || (step === 'results' && viewMode === 'model_solution')) && <RenderPaper
                     scale={scale} config={config} paper={paper}
                     paperMode={paperMode} viewMode={viewMode} setViewMode={setViewMode}
                     isEditing={isEditing} handleQuestionUpdate={handleQuestionUpdate} handleOptionUpdate={handleOptionUpdate}
                     answers={answers} handleAnswerChange={handleAnswerChange}
                     textAnswers={textAnswers} handleTextAnswerChange={handleTextAnswerChange}
+                    sketchAnswers={sketchAnswers} handleSketchSave={handleSketchSave}
                     candidateName={candidateName} mode={mode} topicInput={topicInput} sessionId={sessionId}
                     currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex}
                     flaggedQuestions={flaggedQuestions} setFlaggedQuestions={setFlaggedQuestions}
-                    timeLeft={timeLeft} timerActive={timerActive}
+                    timeLeft={timeLeft} timerActive={timerActive} theme={theme} tabSwitches={tabSwitches}
                 />}
                 {step === 'results' && viewMode === 'omr_sheet' && <RenderOMR
                     scale={scale} paper={paper} config={config}
                     sessionId={sessionId} mode={mode} topicInput={topicInput}
-                    candidateName={candidateName}
+                    candidateName={candidateName} theme={theme}
                 />}
                 {step === 'results' && (viewMode === 'summary' || viewMode === 'review') && <RenderResults
                     gradingResults={gradingResults} paper={paper}
                     answers={answers} textAnswers={textAnswers}
+                    sketchAnswers={sketchAnswers}
                     viewMode={viewMode} setViewMode={setViewMode}
                     scale={scale} candidateName={candidateName}
                     mode={mode} topicInput={topicInput}
                     setStep={setStep} config={config} sessionId={sessionId}
+                    theme={theme} tabSwitches={tabSwitches}
                 />}
                 {step === 'settings' &&
                     <RenderSettings
@@ -402,9 +474,11 @@ export default function Quizify() {
                         profileName={profileName} setProfileName={setProfileName}
                         userApiKey={userApiKey} setUserApiKey={setUserApiKey}
                         aiModel={aiModel} setAiModel={setAiModel}
+                        theme={theme} setTheme={setTheme}
                     />
                 }
             </main>
+
         </div>
     );
 }

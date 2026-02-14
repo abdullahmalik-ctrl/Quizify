@@ -11,6 +11,7 @@ import RenderOMR from './components/RenderOMR';
 import RenderResults from './components/RenderResults';
 import RenderSettings from './components/RenderSettings';
 
+
 export default function Quizify() {
     const [step, setStep] = useState('welcome');
     const [prevStep, setPrevStep] = useState('welcome');

@@ -1,15 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/Quizify/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quizify - AI Exam Generator</title>
-    <meta name="description" content="Transform any content into a professional exam in seconds. Powered by advanced AI." />
-    <script type="module" crossorigin src="/Quizify/assets/index-CacJSAJB.js"></script>
-    <link rel="stylesheet" crossorigin href="/Quizify/assets/index-B_R5t_MY.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>Quizify - AI Exam Generator</title>
+  <meta name="description"
+    content="Transform any content into a professional exam in seconds. Powered by advanced AI." />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+  </script>
+  <script type="module" crossorigin src="/Quizify/assets/index-Bupn-j7M.js"></script>
+  <link rel="stylesheet" crossorigin href="/Quizify/assets/index-DRvpyvx_.css">
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
+
 </html>

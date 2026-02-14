@@ -121,10 +121,16 @@ export default function Quizify() {
 
     useEffect(() => {
         let interval = null;
-        if (timerActive && timeLeft > 0) interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-        else if (timeLeft === 0) setTimerActive(false);
+        const isSolving = step === 'paper' && paperMode === 'solve';
+
+        if (timerActive && timeLeft > 0 && isSolving) {
+            interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+        } else if (timeLeft === 0 && timerActive) {
+            setTimerActive(false);
+        }
+
         return () => clearInterval(interval);
-    }, [timerActive, timeLeft]);
+    }, [timerActive, timeLeft, step, paperMode]);
 
     // Loading animation message rotation
     useEffect(() => {

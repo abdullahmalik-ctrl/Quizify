@@ -1,14 +1,22 @@
 import React from 'react';
-import { ChevronLeft, FileText, Flag, Bookmark, CheckCircle2, Clock, Calculator, Sigma, X, Plus, Minus, Divide, Equal, Info, Edit3 } from 'lucide-react';
+import { ChevronLeft, FileText, Flag, Bookmark, CheckCircle2, Clock, Calculator, Sigma, X, Plus, Minus, Divide, Equal, Info, Edit3, Printer, Play } from 'lucide-react';
 import Button from './ui/Button';
 import FormattedText from './ui/FormattedText';
 import Sketchpad from './ui/Sketchpad';
 
 
+
+const formatTime = (seconds) => {
+    if (typeof seconds !== 'number') return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 const RenderPaper = ({
     scale, config, paper,
-    paperMode, viewMode, setViewMode,
-    isEditing, handleQuestionUpdate, handleOptionUpdate,
+    paperMode, viewMode, setViewMode, setPaperMode,
+    isEditing, setIsEditing, handleSubmitPaper, handleQuestionUpdate, handleOptionUpdate,
     answers, handleAnswerChange,
     textAnswers, handleTextAnswerChange,
     sketchAnswers, handleSketchSave,
@@ -274,7 +282,7 @@ const RenderPaper = ({
                     </div>
 
                     {/* Desktop Navigation Box - Glassy Redesign */}
-                    <div className={`hidden md:flex justify-between items-center p-3 ${theme === 'light' ? 'bg-white/80 border-slate-200 shadow-xl' : 'm3-glass-dark border-white/30 shadow-2xl'} rounded-3xl border`}>
+                    <div className={`hidden md:flex justify-between items-center p-2 ${theme === 'light' ? 'bg-white/80 border-slate-200 shadow-xl' : 'm3-glass-dark border-white/30 shadow-2xl'} rounded-full border gap-4`}>
 
                         <Button
                             variant="dark"
@@ -285,9 +293,45 @@ const RenderPaper = ({
                             <ChevronLeft size={20} /> <span className="font-black tracking-wider uppercase text-[10px]">Previous</span>
                         </Button>
 
-                        <div className={`flex flex-col items-center px-8 border-x ${theme === 'light' ? 'border-slate-200' : 'border-white/10'}`}>
-                            <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-1 leading-none ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Pacing</span>
-                            <span className={`font-black text-xl tracking-tighter leading-none ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>{currentQuestionIndex + 1} <span className="text-slate-400">/</span> {totalQuestions}</span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setPaperMode('question')}
+                                className={`h-12 px-5 rounded-full flex items-center gap-2 border transition-all hover:scale-105 active:scale-95 font-bold ${theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:text-indigo-600' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'}`}
+                                title="View Question Paper"
+                            >
+                                <FileText size={18} /> <span className="text-xs uppercase tracking-wider">Paper</span>
+                            </button>
+
+                            <div className={`flex flex-col items-center justify-center px-10 border-x ${theme === 'light' ? 'border-indigo-100' : 'border-white/10'}`}>
+                                <div className={`text-2xl font-black tracking-widest font-mono flex items-center gap-2 mb-0.5 ${timeLeft < 60 ? 'text-red-500 animate-pulse drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                                    timeLeft < 300 ? 'text-orange-500' :
+                                        theme === 'light' ? 'text-indigo-900' : 'text-white'
+                                    }`}>
+                                    <Clock size={18} className={timeLeft < 300 ? 'animate-pulse' : ''} weight="bold" />
+                                    {formatTime(timeLeft)}
+                                </div>
+                                <div className="flex flex-col w-32 gap-1.5 mt-1">
+                                    <div className={`h-1.5 w-full rounded-full overflow-hidden ${theme === 'light' ? 'bg-slate-200' : 'bg-white/10'}`}>
+                                        <div
+                                            className="h-full bg-indigo-600 transition-all duration-300 ease-out"
+                                            style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
+                                        />
+                                    </div>
+                                    <div className={`flex justify-between text-[8px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        <span>Q {currentQuestionIndex + 1}</span>
+                                        <span>{totalQuestions}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSubmitPaper}
+                                className={`h-12 px-5 rounded-full flex items-center gap-2 border transition-all hover:scale-105 active:scale-95 font-bold ${theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:text-indigo-600' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'}`}
+                                title="Finish Assessment"
+                            >
+                                <CheckCircle2 size={18} className={theme === 'light' ? 'text-green-600' : 'text-green-400'} />
+                                <span className="text-xs uppercase tracking-wider">Finish</span>
+                            </button>
                         </div>
 
                         <Button
@@ -296,7 +340,7 @@ const RenderPaper = ({
                             onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
                             className="flex items-center gap-2 !px-12 !py-5 !rounded-full scale-105 active:scale-95 disabled:opacity-20 transition-all duration-300"
                         >
-                            <span className="font-black tracking-wider uppercase text-[10px]">Next Question</span>
+                            <span className="font-black tracking-wider uppercase text-[10px]">Next</span>
                             <ChevronLeft size={20} className="rotate-180" />
                         </Button>
                     </div>
@@ -419,29 +463,56 @@ const RenderPaper = ({
                     </div>
                 </div>
 
-                {/* Mobile Navigation Bar - Glassy Redesign */}
-                <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[60] flex md:hidden items-center justify-between p-3 ${theme === 'light' ? 'bg-white/80' : 'm3-glass-dark'} shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] rounded-3xl border border-white/40 ring-1 ring-white/20`}>
+
+                {/* Mobile Navigation Bar - Glassy Redesign with integrated actions */}
+                <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 w-[98%] max-w-[420px] z-[60] flex md:hidden items-center justify-between p-2 ${theme === 'light' ? 'bg-white/90 backdrop-blur-xl' : 'm3-glass-dark'} shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] rounded-full border border-white/40 ring-1 ring-white/20`}>
                     <button
                         disabled={currentQuestionIndex === 0}
                         onClick={() => setCurrentQuestionIndex(prev => prev - 1)}
-                        className="h-14 w-14 rounded-full flex items-center justify-center bg-slate-950 !bg-none shadow-2xl border border-white/10 text-white transition-all active:scale-90 disabled:opacity-20 hover:bg-black"
+                        className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center bg-slate-950 !bg-none shadow-xl border border-white/10 text-white transition-all active:scale-90 disabled:opacity-20 hover:bg-black"
                     >
-                        <ChevronLeft size={28} />
+                        <ChevronLeft size={20} />
                     </button>
 
-                    <div className="flex flex-col items-center pointer-events-none px-4">
-                        <div className={`px-3 py-1 rounded-full border mb-1 ${theme === 'light' ? 'bg-white/50 backdrop-blur-md border-indigo-100/50' : 'bg-black/20 border-white/10'}`}>
-                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${theme === 'light' ? 'text-indigo-600' : 'text-indigo-300'}`}>Live Assessment</span>
+                    <div className="flex items-center gap-1 justify-center flex-1 mx-1">
+                        {/* Question Paper Button */}
+                        <button
+                            onClick={() => setPaperMode('question')}
+                            className={`h-9 px-2 rounded-full flex items-center justify-center gap-1 transition-all active:scale-95 border border-white/10 ${theme === 'light' ? 'bg-white text-slate-600' : 'bg-white/10 text-white'}`}
+                        >
+                            <FileText size={14} />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Paper</span>
+                        </button>
+
+                        <div className="flex flex-col items-center justify-center px-2 border-x border-white/10 mx-0.5">
+                            <div className={`text-sm font-black tracking-widest font-mono flex items-center gap-1 leading-none mb-0.5 ${timeLeft < 60 ? 'text-red-500 animate-pulse' :
+                                timeLeft < 300 ? 'text-orange-500' :
+                                    theme === 'light' ? 'text-indigo-900' : 'text-white'
+                                }`}>
+                                <Clock size={10} strokeWidth={3} />
+                                {formatTime(timeLeft)}
+                            </div>
+                            <div className={`text-[8px] font-bold uppercase tracking-wider ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                                Q {currentQuestionIndex + 1} <span className="text-slate-300 dark:text-slate-600">/</span> {totalQuestions}
+                            </div>
                         </div>
-                        <span className={`text-lg font-black tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>Q{currentQuestionIndex + 1} <span className="text-slate-400 mx-1">/</span> {totalQuestions}</span>
+
+                        {/* Finish Button */}
+                        <button
+                            onClick={handleSubmitPaper}
+                            className={`h-9 px-2 rounded-full flex items-center justify-center gap-1 transition-all active:scale-95 border border-white/10 ${theme === 'light' ? 'bg-white text-slate-600' : 'bg-white/10 text-white'}`}
+                        >
+                            <CheckCircle2 size={14} className={theme === 'light' ? 'text-green-600' : 'text-green-400'} />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Finish</span>
+                        </button>
                     </div>
 
                     <button
                         disabled={currentQuestionIndex === totalQuestions - 1}
                         onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                        className={`h-14 w-14 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl disabled:opacity-20 ${theme === 'light' ? 'bg-slate-950 text-white hover:bg-black' : 'bg-black text-white hover:bg-slate-900 border border-white/10'}`}
+                        className={`h-10 w-10 shrink-0 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-xl disabled:opacity-20 ${theme === 'light' ? 'bg-slate-950 text-white hover:bg-black' : 'bg-black text-white hover:bg-slate-900 border border-white/10'}`}
                     >
-                        <ChevronLeft size={28} className="rotate-180" />
+                        <ChevronLeft size={20} className="rotate-180" />
                     </button>
                 </div>
 
@@ -566,7 +637,7 @@ const RenderPaper = ({
 
                         <div className="text-center mb-6">
                             <h2 className="text-3xl font-bold uppercase underline underline-offset-4 decoration-2">
-                                {mode === 'topic' ? (viewMode === 'model_solution' ? "Model Solution" : "Subjective Assessment") : (viewMode === 'model_solution' ? "Model Solution" : "Terminal Examination")}
+                                {mode === 'topic' ? (viewMode === 'model_solution' ? null : "Subjective Assessment") : (viewMode === 'model_solution' ? null : "Terminal Examination")}
                             </h2>
                         </div>
 
@@ -705,18 +776,68 @@ const RenderPaper = ({
                             })}
                         </div>
                     </div>
-                    {viewMode === 'model_solution' && (
-                        <div className="mt-8 flex justify-center print:hidden">
-                            <Button variant="primary" onClick={() => setViewMode('summary')} className="!rounded-full shadow-xl">
-                                <ChevronLeft size={18} className="mr-2" /> Back to Results
-                            </Button>
-                        </div>
-                    )}
+
                     <div className="mt-24 pt-8 border-t border-gray-300 text-center flex justify-between items-center text-base text-gray-400 print:mt-12">
                         <span>Quizify Pro Generated</span><span>CONFIDENTIAL</span>
                     </div>
                 </div>
             </div>
+            {viewMode === 'model_solution' && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden">
+                    <div className="flex items-center gap-2 p-2 rounded-full border border-white/20 shadow-2xl backdrop-blur-xl bg-white/60 dark:bg-black/40 animate-fade-in-up transition-all hover:scale-105 ring-1 ring-white/10">
+                        <button
+                            onClick={() => window.print()}
+                            className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center"
+                            title="Print Solution"
+                        >
+                            <Printer size={20} />
+                            <span className="ml-2 text-xs font-bold uppercase tracking-widest px-2">Print Solution</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+            {viewMode !== 'model_solution' && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden">
+                    <div className="flex items-center gap-2 p-2 rounded-full border border-white/20 shadow-2xl backdrop-blur-xl bg-white/60 dark:bg-black/40 animate-fade-in-up transition-all hover:scale-105 ring-1 ring-white/10">
+                        {/* Edit Button */}
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className={`p-3 rounded-full transition-all duration-300 flex items-center justify-center backdrop-blur-md ${isEditing
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                : 'bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10'
+                                }`}
+                            title={isEditing ? "Save Changes" : "Edit Paper"}
+                        >
+                            {isEditing ? <CheckCircle2 size={20} /> : <Edit3 size={20} />}
+                        </button>
+
+                        <div className="w-[1px] h-6 bg-slate-900/10 dark:bg-white/10 mx-1"></div>
+
+                        {/* Print Button */}
+                        <button
+                            onClick={() => window.print()}
+                            className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center"
+                            title="Print Paper"
+                        >
+                            <Printer size={20} />
+                        </button>
+
+                        <div className="w-[1px] h-6 bg-slate-900/10 dark:bg-white/10 mx-1"></div>
+
+                        {/* Solve Button */}
+                        <button
+                            onClick={() => {
+                                setPaperMode('solve');
+                                setCurrentQuestionIndex(0);
+                            }}
+                            className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center"
+                            title="Start Solving"
+                        >
+                            <Play size={20} fill="currentColor" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

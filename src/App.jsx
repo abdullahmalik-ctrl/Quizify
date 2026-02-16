@@ -66,6 +66,54 @@ export default function Quizify() {
 
     const topRef = useRef(null);
 
+    // History Navigation Helper
+    const changeStep = (newStep, replace = false, newViewMode = null) => {
+        const state = { step: newStep, viewMode: newViewMode };
+        const hash = newViewMode ? `#${newStep}/${newViewMode}` : `#${newStep}`;
+
+        if (replace) {
+            window.history.replaceState(state, '', hash);
+        } else {
+            window.history.pushState(state, '', hash);
+        }
+        setStep(newStep);
+        if (newViewMode) setViewMode(newViewMode);
+    };
+
+    const handleViewModeChange = (newMode) => {
+        // When changing view mode within results, we push a new history entry
+        // keeping the current step ('results')
+        const state = { step: step, viewMode: newMode };
+        window.history.pushState(state, '', `#${step}/${newMode}`);
+        setViewMode(newMode);
+    };
+
+    // Handle Browser Back Button
+    useEffect(() => {
+        // Initial state replacement to ensure we have a state to pop back to
+        window.history.replaceState({ step: 'welcome' }, '', '#welcome');
+
+        const handlePopState = (event) => {
+            if (event.state) {
+                if (event.state.step) setStep(event.state.step);
+                // If viewMode is in state, set it. Otherwise default to 'summary' if we are in results
+                // This ensures popping back from 'review' (which has viewMode) to 'results' (which might not)
+                // resets the view.
+                if (event.state.viewMode) {
+                    setViewMode(event.state.viewMode);
+                } else if (event.state.step === 'results') {
+                    setViewMode('summary');
+                }
+            } else {
+                // Fallback if no state exists
+                setStep('welcome');
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     // Load profiles from local storage on mount
     useEffect(() => {
         const saved = localStorage.getItem('quizify_profiles');
@@ -191,7 +239,7 @@ export default function Quizify() {
 
     const handleStart = (selectedMode) => {
         setMode(selectedMode);
-        setStep('input');
+        changeStep('input');
         setRawText('');
         setTopicInput('');
         setPaper(null);
@@ -205,16 +253,16 @@ export default function Quizify() {
     const openSettings = () => {
         if (step !== 'settings') {
             setPrevStep(step);
-            setStep('settings');
+            changeStep('settings');
             setError(null);
         }
     };
 
     const closeSettings = () => {
-        setStep(prevStep);
+        changeStep(prevStep);
     };
 
-    const handleTextSubmit = () => { setStep('config'); };
+    const handleTextSubmit = () => { changeStep('config'); };
 
     const handleAnswerChange = (qId, val) => {
         setAnswers(prev => ({ ...prev, [qId]: val }));
@@ -266,9 +314,9 @@ export default function Quizify() {
     };
 
     const generatePaper = async () => {
-        setStep('loading'); setError(null);
+        changeStep('loading'); setError(null);
         let content = mode === 'topic' ? topicInput : rawText;
-        if (!content.trim()) { setError("Input data required."); setStep('config'); return; }
+        if (!content.trim()) { setError("Input data required."); changeStep('config'); return; }
         try {
             const generated = await generateWithGemini(content, config, mode, userApiKey, aiModel);
 
@@ -277,18 +325,20 @@ export default function Quizify() {
 
             let duration = config.timerMode === 'manual' ? config.manualTime * 60 : Math.ceil(totalQuestions * 3) * 60;
 
-            setTimeLeft(duration); setTimerActive(true); setPaper(generated); setPaperMode('question'); setStep('paper'); setIsEditing(false);
-        } catch (err) { setError("Generation failed: " + err.message); setStep('config'); }
+            setTimeLeft(duration); setTimerActive(true); setPaper(generated); setPaperMode('question'); changeStep('paper', true); setIsEditing(false);
+        } catch (err) { setError("Generation failed: " + err.message); changeStep('config'); }
     };
 
     const handleSubmitPaper = async () => {
-        setStep('grading');
+        changeStep('grading');
         try {
             const graded = await gradeWithGemini(paper, textAnswers, answers, vibeCheck, userApiKey, aiModel);
-            setGradingResults(graded); setStep('results');
+            setGradingResults(graded);
+            // Reset view mode to summary when entering results
+            changeStep('results', true, 'summary');
         } catch (e) {
             console.error(e);
-            setStep('results');
+            changeStep('results', true, 'summary');
         }
     };
 
@@ -333,89 +383,18 @@ export default function Quizify() {
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-6">
-                        {tabSwitches > 0 && step === 'paper' && paperMode === 'solve' && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg animate-pulse">
-                                <AlertCircle size={14} className="text-red-500" />
-                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">{tabSwitches} Tab Switch{tabSwitches > 1 ? 'es' : ''}</span>
-                            </div>
-                        )}
+
                         <button
                             onClick={openSettings}
-                            className={`p-2 rounded-xl transition-all duration-300 border ${theme === 'light' ? 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900' : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'}`}
+                            className="p-2 rounded-xl transition-all duration-300 border bg-black/50 border-white/10 text-white/60 hover:text-white hover:bg-black/70 backdrop-blur-md"
                             title="Settings & Profiles"
                         >
                             <Settings size={20} />
                         </button>
 
-                        {step === 'paper' && (
-                            <>
-                                <span className="font-mono text-xs text-white bg-black/50 px-3 py-1.5 rounded-lg border border-white/10 tracking-widest font-bold hidden md:block backdrop-blur-md">ID: {sessionId}</span>
-                                {paperMode === 'solve' && (
-                                    <div className={`flex items-center gap-2 md:gap-3 px-2 py-1 md:px-4 md:py-1.5 rounded-lg border transition-all duration-500 backdrop-blur-md ${timeLeft < 300 ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-black/50 border-white/20 text-white shadow-lg'}`}>
-                                        <Clock size={14} className="md:w-4 md:h-4" />
-                                        <span className="font-mono text-sm md:text-lg font-bold">{formatTime(timeLeft)}</span>
-                                    </div>
-                                )}
-                                {paperMode === 'question' ? (
-                                    <>
-                                        <Button variant="primary" size="sm" onClick={() => { setPaperMode('solve'); setCurrentQuestionIndex(0); }} className="!py-1.5 !px-3 md:!py-2 md:!px-6 !text-[10px] md:!text-xs !rounded-lg uppercase font-bold tracking-wider shadow-xl">Solve</Button>
-                                        <button
-                                            onClick={() => setIsEditing(!isEditing)}
-                                            className={`p-1.5 md:p-2 rounded-lg border border-white/10 transition-colors backdrop-blur-md shadow-lg ${isEditing ? 'bg-fuchsia-600 text-white border-fuchsia-500' : 'bg-black/50 text-white/60 hover:text-white hover:bg-black/70'}`}
-                                            title="Edit Paper"
-                                        >
-                                            {isEditing ? <CheckCircle size={16} className="md:w-5 md:h-5" /> : <Edit3 size={16} className="md:w-5 md:h-5" />}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button onClick={() => setPaperMode('question')} className="p-1.5 md:p-2 rounded-lg bg-black/50 border border-white/10 text-white/60 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-md shadow-lg" title="View Question Paper">
-                                        <FileText size={16} className="md:w-5 md:h-5" />
-                                    </button>
-                                )}
-                                <button onClick={handlePrint} className="p-1.5 md:p-2 rounded-lg bg-black/50 border border-white/10 text-white/60 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-md shadow-lg" title="Print Paper">
-                                    <Printer size={16} className="md:w-5 md:h-5" />
-                                </button>
-                                {paperMode === 'solve' && (
-                                    <Button variant="primary" size="sm" onClick={handleSubmitPaper} className="!py-1.5 !px-3 md:!py-2 md:!px-6 !text-[10px] md:!text-xs !rounded-lg uppercase font-bold tracking-wider shadow-xl">Finalize</Button>
-                                )}
-                            </>
-                        )}
 
-                        {step === 'results' && viewMode === 'review' && (
-                            <>
-                                <span className="font-medium text-white bg-black/50 px-4 py-2 rounded-lg border border-white/10 text-sm tracking-wide mr-4 hidden md:block backdrop-blur-md">AI Checked Paper</span>
-                                <button onClick={handlePrint} className="mr-1 md:mr-2 p-1.5 md:p-2 rounded-lg bg-black/50 border border-white/10 text-white/60 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-md shadow-lg" title="Print Result">
-                                    <Printer size={16} className="md:w-5 md:h-5" />
-                                </button>
-                                <Button variant="secondary" size="sm" onClick={() => setViewMode('summary')} className="flex items-center gap-1 md:gap-2 border border-white/10 bg-black/50 hover:bg-black/70 text-white backdrop-blur-md !px-3 md:!px-6">
-                                    <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="text-xs md:text-sm font-bold">Return</span>
-                                </Button>
-                            </>
-                        )}
 
-                        {step === 'results' && viewMode === 'model_solution' && (
-                            <>
-                                <span className="font-medium text-white bg-black/50 px-4 py-2 rounded-lg border border-white/10 text-sm tracking-wide mr-4 hidden md:block backdrop-blur-md">AI Answer Sheet</span>
-                                <button onClick={handlePrint} className="mr-1 md:mr-2 p-1.5 md:p-2 rounded-lg bg-black/50 border border-white/10 text-white/60 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-md shadow-lg" title="Print Solution">
-                                    <Printer size={16} className="md:w-5 md:h-5" />
-                                </button>
-                                <Button variant="secondary" size="sm" onClick={() => setViewMode('summary')} className="flex items-center gap-1 md:gap-2 border border-white/10 bg-black/50 hover:bg-black/70 text-white backdrop-blur-md !px-3 md:!px-6">
-                                    <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="text-xs md:text-sm font-bold">Return</span>
-                                </Button>
-                            </>
-                        )}
 
-                        {step === 'results' && viewMode === 'omr_sheet' && (
-                            <>
-                                <span className="font-medium text-white bg-black/50 px-4 py-2 rounded-lg border border-white/10 text-sm tracking-wide mr-4 hidden md:block backdrop-blur-md">OMR Sheet</span>
-                                <button onClick={handlePrint} className="mr-1 md:mr-2 p-1.5 md:p-2 rounded-lg bg-black/50 border border-white/10 text-white/60 hover:text-white hover:bg-black/70 transition-colors backdrop-blur-md shadow-lg" title="Print OMR">
-                                    <Printer size={16} className="md:w-5 md:h-5" />
-                                </button>
-                                <Button variant="secondary" size="sm" onClick={() => setViewMode('summary')} className="flex items-center gap-1 md:gap-2 border border-white/10 bg-black/50 hover:bg-black/70 text-white backdrop-blur-md !px-3 md:!px-6">
-                                    <ChevronLeft size={16} className="md:w-5 md:h-5" /> <span className="text-xs md:text-sm font-bold">Return</span>
-                                </Button>
-                            </>
-                        )}
                     </div>
                 </div>
             </nav>
@@ -423,7 +402,7 @@ export default function Quizify() {
             <main className="max-w-7xl mx-auto px-6 py-8 pt-32 relative z-10 print:p-0 print:max-w-none">
                 {step === 'welcome' && <RenderWelcome handleStart={handleStart} theme={theme} />}
                 {step === 'input' && <RenderInput
-                    mode={mode} setStep={setStep}
+                    mode={mode} setStep={changeStep}
                     rawText={rawText} setRawText={setRawText}
                     topicInput={topicInput} setTopicInput={setTopicInput}
                     handleTextSubmit={handleTextSubmit}
@@ -431,7 +410,7 @@ export default function Quizify() {
                 />}
                 {step === 'config' && <RenderConfig
                     config={config} setConfig={setConfig}
-                    setStep={setStep} generatePaper={generatePaper}
+                    setStep={changeStep} generatePaper={generatePaper}
                     error={error} theme={theme}
                     mode={mode} topicInput={topicInput} rawText={rawText}
                 />}
@@ -439,7 +418,7 @@ export default function Quizify() {
                 {step === 'grading' && <RenderLoading isGrading loadingMsgIndex={loadingMsgIndex} theme={theme} />}
                 {(step === 'paper' || (step === 'results' && viewMode === 'model_solution')) && <RenderPaper
                     scale={scale} config={config} paper={paper}
-                    paperMode={paperMode} viewMode={viewMode} setViewMode={setViewMode}
+                    paperMode={paperMode} viewMode={viewMode} setViewMode={handleViewModeChange}
                     isEditing={isEditing} handleQuestionUpdate={handleQuestionUpdate} handleOptionUpdate={handleOptionUpdate}
                     answers={answers} handleAnswerChange={handleAnswerChange}
                     textAnswers={textAnswers} handleTextAnswerChange={handleTextAnswerChange}
@@ -448,6 +427,7 @@ export default function Quizify() {
                     currentQuestionIndex={currentQuestionIndex} setCurrentQuestionIndex={setCurrentQuestionIndex}
                     flaggedQuestions={flaggedQuestions} setFlaggedQuestions={setFlaggedQuestions}
                     timeLeft={timeLeft} timerActive={timerActive} theme={theme} tabSwitches={tabSwitches}
+                    setPaperMode={setPaperMode} setIsEditing={setIsEditing} handleSubmitPaper={handleSubmitPaper}
                 />}
                 {step === 'results' && viewMode === 'omr_sheet' && <RenderOMR
                     scale={scale} paper={paper} config={config}
@@ -458,10 +438,10 @@ export default function Quizify() {
                     gradingResults={gradingResults} paper={paper}
                     answers={answers} textAnswers={textAnswers}
                     sketchAnswers={sketchAnswers}
-                    viewMode={viewMode} setViewMode={setViewMode}
+                    viewMode={viewMode} setViewMode={handleViewModeChange}
                     scale={scale} candidateName={candidateName}
                     mode={mode} topicInput={topicInput}
-                    setStep={setStep} config={config} sessionId={sessionId}
+                    setStep={changeStep} config={config} sessionId={sessionId}
                     theme={theme} tabSwitches={tabSwitches}
                 />}
                 {step === 'settings' &&

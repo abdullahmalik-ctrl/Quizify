@@ -88,7 +88,7 @@ const RenderResults = ({
                         ) : <div className="h-24 w-24 border-2 border-black flex items-center justify-center font-bold">LOGO</div>}
                         <div>
                             <h1 className="text-4xl font-black text-black uppercase tracking-wider mb-2">{config.institutionName || "INSTITUTION NAME"}</h1>
-                            <div className="text-black font-bold uppercase tracking-widest border-2 border-black inline-block px-3 py-1 text-sm bg-gray-100">Official Exam Script</div>
+
                         </div>
                     </div>
                     <div className="flex flex-col items-end">
@@ -99,12 +99,7 @@ const RenderResults = ({
                             </span>
                         </div>
                         <span className="text-xs font-bold uppercase text-gray-400 mt-2 tracking-widest">Final Score</span>
-                        {tabSwitches > 0 && (
-                            <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-red-50 border-2 border-red-200 rounded-lg">
-                                <ScanLine size={12} className="text-red-500" />
-                                <span className="text-[10px] font-black text-red-600 uppercase tracking-tighter">{tabSwitches} Proctoring Alert</span>
-                            </div>
-                        )}
+
                     </div>
                 </div>
 
@@ -254,7 +249,7 @@ const RenderResults = ({
 
                 <div className="mt-20 pt-8 border-t-2 border-black flex justify-between items-end print:hidden">
                     <div>
-                        <div className="text-4xl font-black text-black mb-2 font-handwriting">Quizify AI</div>
+                        <div className="text-4xl font-black text-black mb-2 font-handwriting">Quizify</div>
                         <div className="text-xs uppercase font-bold tracking-widest text-gray-500">Automated Assessment System</div>
                     </div>
                     <div className="text-right">
@@ -263,14 +258,19 @@ const RenderResults = ({
                     </div>
                 </div>
             </Card>
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50 animate-fade-in-up print:hidden">
-                <Button variant="dark" onClick={() => setViewMode('summary')} className="rounded-full !px-8 shadow-2xl">
-                    <ChevronLeft size={20} /> Back
-                </Button>
-                <Button variant="primary" onClick={handlePrint} className="rounded-full !px-8 shadow-2xl">
-                    <Printer size={20} /> Print Result
-                </Button>
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden">
+                <div className="flex items-center gap-2 p-2 rounded-full border border-white/20 shadow-2xl backdrop-blur-xl bg-white/60 dark:bg-black/40 animate-fade-in-up transition-all hover:scale-105 ring-1 ring-white/10">
+                    <button
+                        onClick={() => window.print()}
+                        className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center"
+                        title="Print Review"
+                    >
+                        <Printer size={20} />
+                        <span className="ml-2 text-xs font-bold uppercase tracking-widest px-2">Print Review</span>
+                    </button>
+                </div>
             </div>
+
         </div>
     ) : (
         <div className="max-w-4xl mx-auto text-center space-y-8 md:space-y-10 animate-fade-in-up py-6 md:py-10 relative z-10 px-4 md:px-6">
@@ -284,12 +284,7 @@ const RenderResults = ({
                     {percentage >= 80 ? "Outstanding!" : percentage >= 60 ? "Good Job!" : "Keep Practicing!"}
                 </h2>
                 <p className={`${theme === 'light' ? 'text-slate-500' : 'text-white/60'} font-light text-lg md:text-xl`}>Your assessment analysis is ready.</p>
-                {tabSwitches > 0 && (
-                    <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full animate-bounce">
-                        <ScanLine size={16} className="text-red-500" />
-                        <span className="text-xs font-black text-red-500 uppercase tracking-widest">{tabSwitches} Unauthorized Session Exit{tabSwitches > 1 ? 's' : ''} Detected</span>
-                    </div>
-                )}
+
             </div>
 
             <Card
@@ -380,11 +375,8 @@ const RenderResults = ({
                 </div>
             </Card>
 
-            <div className="text-center mt-8">
-                <Button variant="secondary" onClick={() => window.location.reload()} className="!rounded-full border border-white/20">
-                    Exit & Start New
-                </Button>
-            </div>
+
+
         </div>
     );
 };

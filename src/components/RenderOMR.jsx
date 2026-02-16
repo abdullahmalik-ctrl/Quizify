@@ -1,4 +1,5 @@
 import React from 'react';
+import { Printer } from 'lucide-react';
 
 const RenderOMR = ({ scale, paper, config, sessionId, mode, topicInput, candidateName }) => {
     // Collect all MCQs from all sections
@@ -38,7 +39,7 @@ const RenderOMR = ({ scale, paper, config, sessionId, mode, topicInput, candidat
                             {config.logoUrl ? <img src={config.logoUrl} className="max-h-full max-w-full" alt="Logo" /> : <div className="text-center text-[10px] font-bold">LOGO</div>}
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-4xl font-black uppercase tracking-tight text-black mb-1">OMR ANSWER SHEET</h1>
+
                             <div className="flex justify-between items-end">
                                 <div>
                                     <p className="text-sm font-bold text-gray-600 uppercase tracking-widest">{config.institutionName || "QUIZIFY PRO ASSESSMENT"}</p>
@@ -169,6 +170,18 @@ const RenderOMR = ({ scale, paper, config, sessionId, mode, topicInput, candidat
 
                 <div className="absolute bottom-2 w-full text-center text-[8px] font-mono text-gray-400 uppercase tracking-widest">
                     DO NOT FOLD OR STAPLE • COMPUTER GENERATED FORM • {sessionId}
+                </div>
+            </div>
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 print:hidden">
+                <div className="flex items-center gap-2 p-2 rounded-full border border-white/20 shadow-2xl backdrop-blur-xl bg-white/60 dark:bg-black/40 animate-fade-in-up transition-all hover:scale-105 ring-1 ring-white/10">
+                    <button
+                        onClick={() => window.print()}
+                        className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 shadow-lg border border-white/10 backdrop-blur-md transition-all duration-300 flex items-center justify-center"
+                        title="Print OMR"
+                    >
+                        <Printer size={20} width={20} height={20} /> {/* Assuming Printer is available globally or needs import */}
+                        <span className="ml-2 text-xs font-bold uppercase tracking-widest px-2">Print OMR</span>
+                    </button>
                 </div>
             </div>
         </div>

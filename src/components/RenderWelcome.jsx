@@ -1,5 +1,6 @@
 import React from 'react';
 import { Book, Zap, Sparkles, ArrowRight } from 'lucide-react';
+import logo from '../assets/logo.svg';
 
 export default function RenderWelcome({ handleStart, theme }) {
     const isLight = theme === 'light';
@@ -8,7 +9,7 @@ export default function RenderWelcome({ handleStart, theme }) {
         <div className="min-h-[80vh] flex flex-col items-center justify-center relative py-12 px-4 md:px-0 overflow-hidden text-center">
             {/* Ambient Background Glow */}
             <div className="absolute inset-0 pointer-events-none">
-                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1000px] h-[600px] rounded-full blur-[160px] opacity-10 ${isLight ? 'bg-indigo-300' : 'bg-fuchsia-600'}`}></div>
+                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1000px] h-[600px] rounded-full blur-[160px] ${isLight ? 'bg-indigo-400/5' : 'bg-fuchsia-600/10'}`}></div>
             </div>
 
             <div className="relative z-10 w-full max-w-4xl mx-auto space-y-16">
@@ -82,9 +83,9 @@ export default function RenderWelcome({ handleStart, theme }) {
                 </div>
 
                 {/* Trust/Status Indicator */}
-                <div className={`pt-12 flex items-center justify-center gap-8 ${isLight ? 'text-slate-300' : 'text-white/10'}`}>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]"><img src="./logo.svg" className="w-3 h-3 brightness-0 invert opacity-20" alt="" /> Neural synthesis</div>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]"><Sparkles size={14} /> 100% Validated</div>
+                <div className={`pt-12 flex items-center justify-center gap-8 ${isLight ? 'text-slate-400' : 'text-white/10'}`}>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]"><img src={logo} className={`w-3 h-3 ${isLight ? 'opacity-40 grayscale brightness-0' : 'brightness-0 invert opacity-20'}`} alt="" /> Neural synthesis</div>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em]"><Sparkles size={14} className={isLight ? 'text-indigo-500/50' : 'text-white/20'} /> 100% Validated</div>
                 </div>
 
             </div>

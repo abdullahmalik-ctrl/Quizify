@@ -10,22 +10,35 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  
+  /* Theme Variables */
+  --bg-gradient: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  --text-primary: rgba(255, 255, 255, 0.87);
+  
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root.light {
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --text-primary: #0f172a;
+}
+
+:root.dark {
+  --bg-gradient: linear-gradient(135deg, #581c87 0%, #1e3a8a 100%);
+  --text-primary: rgba(255, 255, 255, 0.87);
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  /* Static Half Purple / Half Blue Gradient */
-  background: linear-gradient(135deg, #581c87 0%, #1e3a8a 100%);
+  background: var(--bg-gradient);
   background-attachment: fixed;
+  color: var(--text-primary);
+  transition: background 0.5s ease, color 0.5s ease;
 }
 
 

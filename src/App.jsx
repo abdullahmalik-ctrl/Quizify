@@ -10,6 +10,7 @@ import RenderPaper from './components/RenderPaper';
 import RenderOMR from './components/RenderOMR';
 import RenderResults from './components/RenderResults';
 import RenderSettings from './components/RenderSettings';
+import logo from './assets/logo.svg';
 
 
 
@@ -359,11 +360,12 @@ export default function Quizify() {
                     </>
                 ) : (
                     <>
-                        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[100px]"></div>
-                        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-indigo-400/10 rounded-full blur-[100px]"></div>
+                        <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-fuchsia-400/5 rounded-full blur-[100px]"></div>
                     </>
                 )}
-                <div className={`absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] ${theme === 'light' ? 'opacity-[0.03]' : 'opacity-100'}`}></div>
+                <div className={`absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] ${theme === 'light' ? 'opacity-100' : 'opacity-0'}`}></div>
+                <div className={`absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)] ${theme === 'dark' ? 'opacity-100' : 'opacity-0'}`}></div>
             </div>
 
             <nav className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 print:hidden">
@@ -372,8 +374,8 @@ export default function Quizify() {
                     <div className="flex items-center gap-2 md:gap-4 cursor-pointer group" onClick={() => setStep('welcome')}>
                         <div className="relative">
                             <div className="absolute inset-0 bg-fuchsia-600 blur-lg opacity-20 group-hover:opacity-50 transition-opacity duration-500"></div>
-                            <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-fuchsia-500/20 border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 overflow-hidden p-1.5">
-                                <img src="./logo.svg" alt="Quizify Logo" className="w-full h-full object-contain filter drop-shadow-md brightness-110" />
+                            <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-fuchsia-500/20 border border-white/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 overflow-hidden p-1.5">
+                                <img src={logo} alt="Quizify Logo" className="w-full h-full object-contain filter drop-shadow-sm brightness-110" />
                             </div>
                         </div>
                         <div className="flex flex-col justify-center">

@@ -372,8 +372,8 @@ export default function Quizify() {
                     <div className="flex items-center gap-2 md:gap-4 cursor-pointer group" onClick={() => setStep('welcome')}>
                         <div className="relative">
                             <div className="absolute inset-0 bg-fuchsia-600 blur-lg opacity-20 group-hover:opacity-50 transition-opacity duration-500"></div>
-                            <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-fuchsia-500/20 border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                                <Brain size={18} className="text-white drop-shadow-md md:w-[22px] md:h-[22px]" />
+                            <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-xl bg-gradient-to-br from-fuchsia-600 via-violet-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-fuchsia-500/20 border border-white/10 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 overflow-hidden p-1.5">
+                                <img src="./logo.svg" alt="Quizify Logo" className="w-full h-full object-contain filter drop-shadow-md brightness-110" />
                             </div>
                         </div>
                         <div className="flex flex-col justify-center">

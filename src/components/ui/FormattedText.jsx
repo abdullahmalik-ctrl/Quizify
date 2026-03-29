@@ -16,6 +16,23 @@ const FormattedText = ({ text, className = '' }) => {
         content = text;
     }
 
+    // Normalize common AI-style math like $x^{n+1}/(n+1)$ into proper fraction form.
+    const normalizeMathBlocks = (input) => {
+        return input.replace(/\$([^$]+)\$/g, (_full, expr) => {
+            let normalized = expr.trim();
+
+            // Convert numerator/(denominator) when numerator has no top-level slash.
+            const fracMatch = normalized.match(/^(.+?)\s*\/\s*\((.+)\)$/);
+            if (fracMatch && !fracMatch[1].includes('/')) {
+                normalized = `\\frac{${fracMatch[1].trim()}}{${fracMatch[2].trim()}}`;
+            }
+
+            return `$${normalized}$`;
+        });
+    };
+
+    content = normalizeMathBlocks(content);
+
     // Helper to process inline styles (bold)
     const renderInline = (str) => {
         return str.split(/(\*\*.*?\*\*)/g).map((part, i) => {

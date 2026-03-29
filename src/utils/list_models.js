@@ -1,10 +1,13 @@
 
 import fs from 'fs';
 
-const apiKey = "AIzaSyCxMU4HO-rCJRr9dwLGdz5p2x3lrjGEs8k";
+const apiKey = process.env.GEMINI_API_KEY;
 
 async function listModels() {
     try {
+        if (!apiKey) {
+            throw new Error('Missing GEMINI_API_KEY environment variable.');
+        }
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
         const data = await response.json();
         fs.writeFileSync('models_list.json', JSON.stringify(data, null, 2));

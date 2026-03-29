@@ -152,7 +152,7 @@ export default function Quizify() {
                 window.MathJax.typesetPromise().catch((err) => console.log('MathJax typeset error:', err));
             }, 150);
         }
-    }, [step, viewMode, paper, paperMode, isEditing]);
+    }, [step, viewMode, paper, paperMode, isEditing, currentQuestionIndex]);
 
     useEffect(() => { topRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [step]);
 

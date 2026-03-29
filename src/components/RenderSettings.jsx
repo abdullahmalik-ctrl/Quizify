@@ -144,10 +144,6 @@ const RenderSettings = ({
     };
 
     const verifyKey = async () => {
-        if (!userApiKey) {
-            setCheckStatus({ success: false, error: "Please enter an API Key first." });
-            return;
-        }
         setCheckingKey(true);
         setCheckStatus(null);
         try {
@@ -323,7 +319,7 @@ const RenderSettings = ({
                         <div className="space-y-6">
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <label className={`text-[10px] font-bold uppercase tracking-widest ml-1 ${isLight ? 'text-slate-400' : 'text-white/60'}`}>Gemini API Key</label>
+                                    <label className={`text-[10px] font-bold uppercase tracking-widest ml-1 ${isLight ? 'text-slate-400' : 'text-white/60'}`}>Gemini API Key (Optional)</label>
                                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className={`text-[10px] font-bold hover:underline transition-colors ${isLight ? 'text-indigo-600' : 'text-fuchsia-400'}`}>Get Free Key</a>
                                 </div>
                                 <div className="flex gap-2">
@@ -363,7 +359,7 @@ const RenderSettings = ({
                                             </div>
                                             <p className={`text-[10px] font-medium leading-relaxed ${checkStatus.success ? (isLight ? 'text-slate-500' : 'text-emerald-400/60') : (isLight ? 'text-red-600/80' : 'text-red-400/60')}`}>
                                                 {checkStatus.success
-                                                    ? `Successfully connected to ${checkStatus.displayName}. Your synthesis architecture is ready.`
+                                                    ? `Successfully connected to ${checkStatus.displayName}. ${checkStatus.usingServerDefaultKey ? 'Using secure server default key.' : 'Using your personal key override.'}`
                                                     : checkStatus.error || "The provided API key is invalid or lacks necessary permissions."}
                                             </p>
                                         </div>
@@ -374,7 +370,7 @@ const RenderSettings = ({
                             {!checkStatus && !userApiKey && (
                                 <div className={`p-4 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-100' : 'bg-white/[0.02] border-white/5'}`}>
                                     <p className={`text-[10px] leading-relaxed italic ${isLight ? 'text-slate-400' : 'text-white/30'}`}>
-                                        "By providing your own API key, you bypass local buffer limits and gain direct access to advanced neural synthesis models."
+                                        "No key required on the client. Quizify can run with your server-side default key. Add your own key only if you want a personal override."
                                     </p>
                                 </div>
                             )}

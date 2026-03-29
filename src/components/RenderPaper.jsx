@@ -155,7 +155,11 @@ const RenderPaper = ({
     });
 
     const cleanOptionText = (text) => {
-        return text.replace(/^[A-Da-d]\)[\s\.]*/, '').trim();
+        const raw = String(text || '').replace(/\r/g, '').trim();
+        return raw
+            .replace(/^option\s*[A-Da-d](?:\s*[:)\-.])?\s*/i, '')
+            .replace(/^\(?[A-Da-d]\)?\s*[:)\-.]?\s*/, '')
+            .trim();
     };
 
     const isQuestionAttempted = (qId) => {
@@ -215,10 +219,10 @@ const RenderPaper = ({
 
 
                         {currentQ?.options && currentQ.options.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div key={currentQ.id} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {currentQ.options.map((opt, oIdx) => (
                                     <label
-                                        key={oIdx}
+                                        key={`${currentQ.id}-${oIdx}`}
                                         className={`flex items-start gap-4 p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 group relative overflow-hidden ${answers[currentQ.id] === opt
                                             ? 'border-indigo-600 bg-indigo-600/20 shadow-lg shadow-indigo-500/10'
                                             : theme === 'light'
@@ -247,7 +251,7 @@ const RenderPaper = ({
                                                 Option {String.fromCharCode(65 + oIdx)}
                                             </span>
                                             <span className={`text-lg transition-colors leading-tight ${answers[currentQ.id] === opt ? (theme === 'light' ? 'text-slate-900' : 'text-white') + ' font-bold' : (theme === 'light' ? 'text-slate-800' : 'text-slate-200')}`}>
-                                                {cleanOptionText(opt)}
+                                                <FormattedText text={cleanOptionText(opt)} />
                                             </span>
                                         </div>
                                     </label>

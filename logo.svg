@@ -1,0 +1,46 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperGrad" x1="60" y1="40" x2="196" y2="216" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.95" />
+      <stop offset="1" stop-color="#F1F5F9" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F02AA6" />
+      <stop offset="0.5" stop-color="#9333EA" />
+      <stop offset="1" stop-color="#6366F1" />
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feOffset dx="0" dy="6" result="offsetBlur" />
+      <feComposite in="SourceGraphic" in2="offsetBlur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Premium Paper Sheet -->
+  <g filter="url(#softShadow)">
+    <path d="M70 30H160L200 70V210C200 218.284 193.284 225 185 225H70C61.7157 225 55 218.284 55 210V45C55 36.7157 61.7157 30 70 30Z" fill="url(#paperGrad)" />
+    <!-- Folded Corner -->
+    <path d="M160 30V60C160 65.5228 164.477 70 170 70H200L160 30Z" fill="#CBD5E1" />
+  </g>
+
+  <!-- Question Lines & Indicators -->
+  <g opacity="0.6">
+    <!-- Header/Title -->
+    <rect x="75" y="85" width="40" height="6" rx="3" fill="url(#accentGrad)" />
+    
+    <!-- Lines for Questions -->
+    <rect x="75" y="110" width="100" height="4" rx="2" fill="#94A3B8" />
+    <rect x="75" y="122" width="80" height="4" rx="2" fill="#94A3B8" />
+    
+    <rect x="75" y="145" width="100" height="4" rx="2" fill="#94A3B8" />
+    <rect x="75" y="157" width="90" height="4" rx="2" fill="#94A3B8" />
+    
+    <rect x="75" y="180" width="100" height="4" rx="2" fill="#94A3B8" />
+    <rect x="75" y="192" width="60" height="4" rx="2" fill="#94A3B8" />
+  </g>
+
+  <!-- Checkboxes / Bullet points on the left -->
+  <rect x="62" y="110" width="4" height="4" rx="1" fill="url(#accentGrad)" opacity="0.8" />
+  <rect x="62" y="145" width="4" height="4" rx="1" fill="url(#accentGrad)" opacity="0.8" />
+  <rect x="62" y="180" width="4" height="4" rx="1" fill="url(#accentGrad)" opacity="0.8" />
+</svg>
